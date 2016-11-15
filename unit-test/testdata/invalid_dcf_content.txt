@@ -1,0 +1,27 @@
+swg12345678
+# next line has trailing whitespace 
+junk 1234567
+1234567 junk
+12345678
+N123456
+N12345678
+712345
+71234567
+712345678
+412345
+41234567
+nas8N123456
+nas8N12345678
+nas81234567
+/1680642
+Doc## 1205991
+Doc#:# 1205991
+http://www.ibm.com/support/docview.wss?rs=899&uid=swg2123456
+http://www.ibm.com/support/docview.wss?rs=899&uid=swg212345678
+http://www.ibm.com/support/docview.wss?uid=swg2123456&rs=899
+http://www.ibm.com/support/docview.wss?uid=swg212345678&rs=899
+http://www.ibm.com/support/docview.wss?nl=en-US&uid=swg2123456&rs=899
+http://www.ibm.com/support/docview.wss?nl=en-US&uid=swg212345678&rs=899
+https://www-304.ibm.com/support/entdocview.wss?uid=swg1IV74479&myns=swgother&mynp=OCSSBQAC&mync=F&cm_sp=swgother-_-OCSSBQAC-_-F
+http://www-01.ibm.com/support/docview.wss?rs=988&uid=pub1gi12345789
+http://www-01.ibm.com/support/docview.wss?rs=0&uid=isg400000000

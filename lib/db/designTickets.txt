@@ -1,0 +1,15 @@
+{
+  "_id": "_design/analytics",
+  "_rev": "14-90b87f1d01ae58f3655d0cf1cdcc3b4d",
+  "views": {
+    "ticketAnswerable": {
+      "map": "function(doc) {\n  emit(doc._id, doc.voted_as_answerable);\n}"
+    },
+    "productAnswerableStats": {
+      "map": "function(doc) {\n  if (doc.ticket_data.component_id) {\n    emit(doc._id, [doc.ticket_data.component_id, doc.voted_as_answerable]);\n  }\n}"
+    },
+    "ticketDetails": {
+      "map": "function(doc) {\n  emit(doc._id, [doc.ticket_title, doc.ticket_created_date, doc.ticket_data.component_id, doc.ticket_data.severity, doc.voted_as_answerable, doc.voted_by, doc.time_to_review, doc.comments]);\n}"
+    }
+  }
+}

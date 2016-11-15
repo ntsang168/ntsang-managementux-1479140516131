@@ -1,0 +1,9 @@
+{
+  "_id": "_design/ux",
+  "_rev": "2-c8b39eeca7feca0a3e779e1cf32fed4b",
+  "views": {
+    "modules": {
+      "map": "function(doc) {\n  if (doc._id.toLowerCase().indexOf(\"module\") >= 0) {\n  emit(doc._id, 1);\n  }\n}"
+    }
+  }
+}

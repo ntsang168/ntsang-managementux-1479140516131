@@ -1,0 +1,420 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/parser",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/on",
+	"dijit/ProgressBar",
+	"dijit/Dialog",
+	"dojo/domReady!"
+],
+function(parser, dom, domClass, on, ProgressBar, Dialog) {
+	var testId = "{{testId}}";
+	if (testId != "") {
+		var testIdTextField = dom.byId("testIdText");
+		testIdTextField.value = testId;
+	}
+	
+	getTestResults(false);
+	
+	parser.parse();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridLogging");
+		grid.resize();
+	});
+});
+
+function showTestingExecute() {
+	window.location = "testingExecute";
+}
+
+function getTestResults(refresh) {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class",
+		"dojo/dom-style",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/utils/JSUtil",
+		"scripts/constants/Constants",
+		"scripts/constants/PubSubTopics",
+		"scripts/widgets/TestResultsDialog",
+		"dojo/domReady!"
+	],
+	function(lang, dom, domForm, domClass, domStyle, domConstruct, topic, request, EnhancedGrid,
+			 GridPagination, ItemFileWriteStore, JSUtil, Constants, PubSubTopics, TestResultsDialog) {
+		var limit = domForm.fieldToObject("testLimit");
+		var testId = domForm.fieldToObject("testIdText");
+		
+		var url = "hub/api/testing/results/" + limit;
+		if (testId && testId != "") {
+			url = "hub/api/testing/resultsbyid/" + testId;
+		}
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+		console.log(url);
+		
+		clearStatus();
+		showProgressBar();
+		var deferred = request(url, options);
+		deferred.then(function(data){
+			//console.log(data);
+			if (refresh) {
+				var gdata = {
+					identifier: 'id',
+					items: []
+				}
+				
+				data.testResults.forEach(function(row) {
+					var info = null;
+					var user = "";
+					var results = "";
+					if (row.additionalInformation) {
+						info = JSON.parse(row.additionalInformation);
+						if (info.user) user = info.user;
+						if (info.results) results = info.results;
+						//console.log(user, results);
+					}
+					gdata.items.push(dojo.mixin({id: row.id},
+												{user: user},
+												{timestamp: row.timestamp},
+												{results: JSON.stringify(results)},
+												{info: JSON.stringify(results)}
+												));
+				});
+				
+				var newStore = new ItemFileWriteStore({data: gdata});
+				var grid = dijit.byId("gridLogging");
+				grid.setStore(newStore);
+				
+				hideProgressBar();
+			} else {
+				var gdata = {
+					identifier: 'id',
+					items: []
+				}
+				
+				data.testResults.forEach(function(row) {
+					//console.log(row);
+					var info = null;
+					var user = "";
+					var results = "";
+					if (row.additionalInformation) {
+						info = JSON.parse(row.additionalInformation);
+						if (info.user) user = info.user;
+						if (info.results) results = info.results;
+					}
+					gdata.items.push(dojo.mixin({id: row.id},
+												{user: user},
+												{timestamp: row.timestamp},
+												{results: JSON.stringify(results)},
+												{info: JSON.stringify(results)}
+												));
+				});
+				
+				var store = new ItemFileWriteStore({data: gdata});
+				
+				var layout = [[
+					{'name': 'Timestamp', 'field': 'timestamp', 'width': '25%', noresize: true},
+					{'name': 'ID', 'field': 'id', 'width': '25%', noresize: true},
+					{'name': 'User', 'field': 'user', 'width': '25%', noresize: true},
+					{'name': 'Test Results', 'field': 'results', 'width': '25%', noresize: true,
+						formatter: function(info){
+							if (info != "") {
+								var testResult = JSON.parse(info);
+								var testResultHTML = "";
+								for (key in testResult) {
+									if (testResult[key].verdict == true) {
+										testResultHTML += "<div class='testCaseResult'><div class='testCaseResultText'>" + key + ": pass" + "</div><div class='testPass'></div></div>";
+									} else if (testResult[key].verdict == false) {
+										testResultHTML += "<div class='testCaseResult'><div class='testCaseResultText'>" + key + ": fail" + "</div><div class='testFail'></div></div>";
+									}
+								}
+								return testResultHTML;
+							}
+							else return "";
+						}
+					}
+				]];
+				/*
+					{'name': 'Info', 'field': 'info', 'width': '60%', noresize: true,
+						formatter: function(info){
+							if (info != "") {
+								var testResult = JSON.parse(info);
+								var testInfoHTML = "";
+								for (key in testResult) {
+									if (testResult[key] && testResult[key].info) {
+										testInfoHTML += "<div class='testCaseResult'><div class='testCaseResultText'>" + key + ": " + JSON.stringify(testResult[key].info) + "</div></div>";
+									}
+								}
+								return testInfoHTML;
+							}
+							else return "";
+						}
+					}
+				*/
+				
+				var gridLogging = new dojox.grid.EnhancedGrid({
+					id: 'gridLogging',
+					store: store,
+					structure: layout,
+					rowSelector: '20px',
+					autoHeight: true,
+					sortInfo: -1,
+					selectable: true,
+					plugins: {
+						pagination: {
+							defaultPageSize: 20,
+							pageSizes: ["20", "50", "100"],
+							description: true,
+							sizeSwitch: true,
+							pageStepper: true,
+							gotoButton: true,
+							/*page step to be displayed*/
+							maxPageStep: 5,
+							/*position of the pagination bar*/
+							position: "top"
+						}
+					}
+				}, document.createElement('div'));//paginatorBar
+				
+				gridLogging.on("RowClick", function(evt){
+					var divDialog = dom.byId(myDialog.id);
+					var dialogHeight = Math.round((window.innerHeight * 0.80));
+					var dialogWidth = Math.round((window.innerWidth * 0.80));
+					domStyle.set(divDialog, "height", dialogHeight.toString() + "px");
+					domStyle.set(divDialog, "width", dialogWidth.toString() + "px");
+					
+					var idx = evt.rowIndex,
+						rowData = gridLogging.getItem(idx);
+						
+					myDialog.set('title', "Test Results for ID " + rowData.id[0]);
+					myDialog.show();
+					
+					var testResultsContent = dom.byId("testResultsContent");
+					domConstruct.empty(testResultsContent);
+					
+					domConstruct.empty(testResultsContent);
+					var resultsDialog = new TestResultsDialog({
+						dialogHeight: dialogHeight,
+						dialogWidth: dialogWidth,
+						testResults: rowData.info[0]
+					});
+					resultsDialog.placeAt(testResultsContent);
+				}, true);
+				
+				dom.byId("gridLoggingDiv").appendChild(gridLogging.domNode);
+				gridLogging.startup();
+				
+				hideProgressBar();
+			}
+		}, function(error){
+			console.log("testing: getTestResults() - An unexpected error occurred: " + error);
+			var divStatusMsg = dom.byId("testStatusMsg");
+			var divStatusMsgText = dom.byId("testStatusMsgText");
+			domClass.remove(divStatusMsg, "hidden");
+			domClass.add(divStatusMsg, "testStatusMsgError");
+			divStatusMsgText.innerHTML = "No test results found";
+			var gdata = {
+				identifier: 'id',
+				items: []
+			}
+			var newStore = new ItemFileWriteStore({data: gdata});
+			var grid = dijit.byId("gridLogging");
+			grid.setStore(newStore);
+			hideProgressBar();
+		});
+		
+		topic.subscribe(PubSubTopics.TEST_RESULTS_DIALOG_CLOSE, lang.hitch(this, "emptyDialog"));
+	});
+}
+
+function emptyDialog() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"dijit/registry"
+	],
+	function(dom, domConstruct, registry) {
+		myDialog.hide();
+		var testResultsContent = dom.byId("testResultsContent");
+		var widgets = registry.findWidgets(testResultsContent);
+		dojo.forEach(widgets, function(w) {
+			w.destroyRecursive(false);
+		});
+		domConstruct.empty(testResultsContent);
+	});
+}
+
+function downloadLogData() {
+	require([
+		"dojo/dom-form",
+		"dojo/request",
+		"dojo/topic",
+		"scripts/constants/PubSubTopics"
+	],
+	function(domForm, request, topic, PubSubTopics) {
+		var limit = domForm.fieldToObject("testLimit");
+			
+		var url = "hub/api/testing/results/csv/" + limit;
+		var options = {
+			method: "GET",
+			handleAs: "text",
+		}
+			
+		var deferred = request(url, options);
+				
+		deferred.then(function(data){
+			//console.log(data);
+		topic.publish(PubSubTopics.LOGGING_FIRE_DOWNLOAD_LINK, data);
+		}, function(error){
+			console.log("testing: downloadLogData() - An unexpected error occurred: " + error);
+		});
+	});
+}
+
+function showProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridLoggingDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.remove(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "0.5");
+		btnRefresh.removeAttribute("onclick");
+		domClass.remove(btnRefresh, "logBtnRefresh");
+		domClass.add(btnRefresh, "logBtnRefreshDisabled");
+	});
+}
+
+function hideProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridLoggingDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.add(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "1.0");
+		btnRefresh.setAttribute("onclick", "getTestResults(true)");
+		domClass.remove(btnRefresh, "logBtnRefreshDisabled");
+		domClass.add(btnRefresh, "logBtnRefresh");
+	});
+}
+
+function clearStatus() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var divStatusMsg = dom.byId("testStatusMsg");
+		domClass.remove(divStatusMsg, "testStatusMsgSuccess");
+		domClass.remove(divStatusMsg, "testStatusMsgError");
+		domClass.add(divStatusMsg, "hidden");
+	});
+}
+
+require([
+	"dojo/dom",
+	"dojo/dom-construct",
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(dom, domConstruct, topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.LOGGING_FIRE_DOWNLOAD_LINK, function(data) {
+		var divDownloadLogs = dom.byId("downloadLogs");
+		domConstruct.empty(divDownloadLogs);
+		var blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
+		var url = URL.createObjectURL(blob);     
+		domConstruct.create("a", { id: "downloadLogsLink", href: url, download: "testresults.csv", innerHTML: "link", style: "visibility:hidden" }, divDownloadLogs);
+		var downloadLink = dom.byId("downloadLogsLink");
+		downloadLink.click();
+	});
+});
+
+require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.LOGGING_SAVE_LOG_DATA, function(data) {
+		dataExport = data;
+	});
+});
+</script>
+
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div class="tabOn"><div class="tabTextOn">Results</div></div>
+			<div class="tab"><div class="tabText" onclick="showTestingExecute();">Execute</div></div>
+		</div>
+		<div class="contentAreaLogging">
+			<div id="testStatusMsg" class="testStatusMsg hidden">
+				<table width="100%">
+					<tr>
+						<td width="90%"><div id="testStatusMsgText" class="testStatusMsgText"></div></td>
+						<td width="10%" align="right"><div class="testStatusMsgClose" onclick="clearStatus()">X</div></td>
+					</tr>
+				</table>
+			</div>
+			<div id="logFiltersAttachPoint" class="logFilters">
+				<form id="logFiltersForm" onkeydown="if (event.keyCode == 13) { getTestResults(true); return false; }">
+				<div class="logFiltersText">Last </div>
+				<input id="testLimit" name="testLimit" class="logFiltersNumberField" type="text" value="100"/>
+				<div class="logFiltersText">ID</div>
+				<input id="testIdText" name="testIdText" class="logFiltersTextFieldId" type="text" value=""/>
+				<button id="btnRefresh" class="logBtnRefresh" type="button" onclick="getTestResults(true);"></button>
+				<!--<div id="logProgressBar" dojoType="dijit.ProgressBar" indeterminate="true" class="logProgressBar hidden"></div>-->
+				<div id="refreshProgress" class="progressIndicator hidden"></div>
+				<button class="logBtnDownload" type="button" onclick="downloadLogData();"></button>
+				</form>
+			</div>
+			<div class="logArea">
+				<div id="gridLoggingDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadLogs"></div>
+		</div>
+	</div>
+	
+	<div data-dojo-type="dijit/Dialog" data-dojo-id="myDialog" title="">
+		<div id="testResultsContent"></div>
+	</div>
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/btnRefreshOn.png",
+				"images/btnDownloadOn.png"
+			)
+		</script>
+	</div>
+	-->
+</div>

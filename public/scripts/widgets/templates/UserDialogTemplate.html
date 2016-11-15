@@ -1,0 +1,47 @@
+<div>
+	<div class="userContent">
+		<div class="formText">User ID: </div>
+		<input data-dojo-attach-point="userIdAttachPoint" class="formTextField" type="text" value=""/>
+		<div data-dojo-attach-point="userIdErrorAttachPoint" class="errorText"></div>
+	</div>
+	<div class="permissionsContent">
+		<div class="formTextHeading">Permissions</div>
+		<table class="formTable">
+
+			<tr class="formTableRow">
+				<td class="formTableCellText">Analytics</td>
+				<td class="formTableCellValue">
+					<input id="cb1" data-dojo-attach-point="permissionAnalyticsAttachPoint" type="checkbox" value="" /><label for="cb1"><span></span></label>
+				</td>
+			</tr>
+			<tr class="formTableRow">
+				<td class="formTableCellText">Logging</td>
+				<td class="formTableCellValue">
+					<input id="cb2" data-dojo-attach-point="permissionLoggingAttachPoint" type="checkbox" value="" /><label for="cb2"><span></span></label>
+				</td>
+			</tr>
+			<tr class="formTableRow">
+				<td class="formTableCellText">Testing</td>
+				<td class="formTableCellValue">
+					<input id="cb3" data-dojo-attach-point="permissionTestingAttachPoint" type="checkbox" value="" /><label for="cb3"><span></span></label>
+				</td>
+			</tr>
+			<tr class="formTableRow">
+				<td class="formTableCellText">Configure</td>
+				<td class="formTableCellValue">
+					<input id="cb4" data-dojo-attach-point="permissionConfigureAttachPoint" type="checkbox" value="" /><label for="cb4"><span></span></label>
+				</td>
+			</tr>
+			<tr class="formTableRow">
+				<td class="formTableCellText">Administration</td>
+				<td class="formTableCellValue">
+					<input id="cb5" data-dojo-attach-point="permissionAdministrationAttachPoint" type="checkbox" value="" /><label for="cb5"><span></span></label>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div class="submitContent">
+		<div class="btnSave" data-dojo-attach-event="onclick:save"></div>
+		<div class="btnCancel" data-dojo-attach-event="onclick:cancel"></div>
+	</div>
+</div>

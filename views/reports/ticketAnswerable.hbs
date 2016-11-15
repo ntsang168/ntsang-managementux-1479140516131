@@ -1,0 +1,441 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/domReady!"
+],
+function(domClass, on) {
+	var chart = null;
+	var reportDataExport = null;
+	
+	renderReport();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridReport");
+		grid.resize();
+	});
+});
+
+function showReportList() {
+	window.location = "analytics";
+}
+
+function renderReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"dojo/dom-form",
+		"dojo/topic",
+		"dojo/request",
+		"dojo/DeferredList",
+		"dojox/grid/EnhancedGrid",
+		"dojo/data/ItemFileWriteStore",
+		"dojox/charting/Chart",
+		"dojox/charting/themes/Adobebricks",
+		"dojox/charting/plot2d/Bars",
+		"dojox/charting/plot2d/Columns",
+		"dojox/charting/action2d/Highlight",
+		"dojox/charting/action2d/Tooltip",
+		"dojox/charting/plot2d/Markers",
+		"dojox/charting/axis2d/Default",
+		"dojox/charting/widget/Legend",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+	],
+	function (dom, domConstruct, domForm, topic, request,
+			  DeferredList, EnhancedGrid, ItemFileWriteStore,
+			  Chart, theme, Bars, Columns, Highlight, Tooltip, Markers, Default, Legend,
+			  JSUtil, PubSubTopics) {
+		var url = "hub/api/analytics/productscomponentsmap";
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+
+		var componentsMap = {};
+		var deferred = request(url, options);
+		deferred.then(function(result) {
+			componentsMap = result;
+			
+			var url = "hub/api/analytics/batchprogress";
+			var options = {
+				method: "GET",
+				handleAs: "json",
+			}
+			
+			var deferred = request(url, options);
+			deferred.then(function(batches) {
+				var deferredListTickets = [];
+				
+				var ticketIds = [];
+				batches.batches.forEach(function(batch) {
+					ticketIds = ticketIds.concat(batch.ticketIds);
+				});
+				//console.log(ticketIds.sort());
+				var filterTicketIds = {}
+				ticketIds.forEach(function(id) {
+					if (!filterTicketIds[id]) {
+						filterTicketIds[id] = 1;
+					}
+				});
+				//console.log(filterTicketIds);
+				//var uniqueTicketIds = [];
+				var count = 1;
+				var batchLimit = 500;
+				var ticketIdsBatch = [];
+				for (var key in filterTicketIds) {
+					//uniqueTicketIds.push(key);
+					if (count < batchLimit) {
+						ticketIdsBatch.push(key);
+						count++;
+					} else {
+						ticketIdsBatch.push(key);
+						var urlTickets = "hub/api/analytics/componentanswerablestats";
+						var optionsTickets = {
+							method: "POST",
+							handleAs: "json",
+							data: {
+								ticketids: ticketIdsBatch
+							}
+						}
+						var deferredTickets = request(urlTickets, optionsTickets);
+						deferredListTickets.push(deferredTickets);
+						
+						ticketIdsBatch = [];
+						count = 1;
+					}
+				}
+				//console.log(uniqueTicketIds);
+				if (count > 1) {
+					var urlTickets = "hub/api/analytics/componentanswerablestats";
+					var optionsTickets = {
+						method: "POST",
+						handleAs: "json",
+						data: {
+							ticketids: ticketIdsBatch
+						}
+					}
+					var deferredTickets = request(urlTickets, optionsTickets);
+					deferredListTickets.push(deferredTickets);
+				}
+				
+				//var deferred = request(url, options);
+				//deferred.then(function(components) {
+				var dl = new DeferredList(deferredListTickets);
+				dl.then(function(result) {
+					var productStats = {};
+					result.forEach(function(subResult) {
+						if (subResult[0]) {
+							//console.log(subResult[1]);
+							subResult[1].components.forEach(function(comp) {
+								//console.log(comp);
+								var compId = comp.id;
+								if (componentsMap[compId]) {
+									//console.log(componentsMap[compId]);
+									if (!productStats[componentsMap[compId]]) {
+										productStats[componentsMap[compId]] = {
+											yes: comp.yes,
+											no: comp.no,
+											maybe: comp.maybe,
+											noResponse: comp.noResponse,
+											total: comp.total,
+											compIds: [compId]
+										}
+									} else {
+										productStats[componentsMap[compId]].yes = productStats[componentsMap[compId]].yes + comp.yes;
+										productStats[componentsMap[compId]].no = productStats[componentsMap[compId]].no + comp.no;
+										productStats[componentsMap[compId]].maybe = productStats[componentsMap[compId]].maybe + comp.maybe;
+										productStats[componentsMap[compId]].noResponse = productStats[componentsMap[compId]].noResponse + comp.noResponse;
+										productStats[componentsMap[compId]].total = productStats[componentsMap[compId]].total + comp.total;
+										productStats[componentsMap[compId]].compIds.push(compId);
+									}
+								}
+							});
+						}
+					});
+					
+					var sortedKeys = Object.keys(productStats).sort();
+					//console.log(sortedKeys);
+					
+					// Setup data for chart and grid
+					var gdata = {
+						identifier: 'id',
+						items: []
+					}
+					
+					var chartData = [];
+					var chartData2 = [];
+					var chartDataTotal = [];
+				
+					var labelData = [];
+					var reportData = [];
+					
+					//labelData.push({value: 1, text:"Placeholder Product"});
+					//labelData.push({value: 2, text:"Placeholder Product 2"});
+					var count = 1;
+					var ticketMin = domForm.fieldToObject("ticketMin");
+					//for (var product in productStats) {
+					sortedKeys.forEach(function(product) {
+						if (productStats.hasOwnProperty(product)) {
+							var answerable = ((productStats[product].yes) / productStats[product].total) * 100;
+							answerable = Math.round(answerable);
+							reportData.push(dojo.mixin({product: product}, productStats[product], {answerable: answerable}));
+							if (productStats[product].total >= ticketMin) {
+								gdata.items.push(dojo.mixin({id: product}, {name: product}, productStats[product], {answerable: answerable}));
+								chartData.push({x: 1, y: 0});
+								chartData.push({
+									x: count,
+									y: productStats[product].yes,
+									tooltip: "Yes " + productStats[product].yes,
+									text: "Yes " + productStats[product].yes
+								});
+								chartData2.push({x: 1, y: 1});
+								chartData2.push({
+									x: count,
+									y: productStats[product].yes + productStats[product].maybe,
+									tooltip: "Maybe " + productStats[product].maybe,
+									text: "Maybe " + productStats[product].maybe
+								});
+								chartDataTotal.push({x: 1, y: 2});
+								chartDataTotal.push({
+									x: count,
+									y: productStats[product].total,
+									color: [208, 210, 211],
+									stroke: {color: [109, 110, 112], width: 2},
+									tooltip: "Total " + productStats[product].total,
+									text: "Total " + productStats[product].total
+								});
+								labelData.push({value: count, text: product});
+								count++;
+							}
+						}
+					});
+					
+					// Save data for download function
+					topic.publish(PubSubTopics.ANALYTICS_SAVE_TICKET_ANSWERABLE_REPORT_DATA, reportData);
+					
+					// Build grid to display raw data
+					var store = new ItemFileWriteStore({data: gdata});
+						
+					var layout = [[
+						{'name': 'Name', 'field': 'name', 'width': '40%', noresize: true},
+						{'name': 'Total Tickets', 'field': 'total', 'width': '10%', noresize: true},
+						{'name': '% Answerable', 'field': 'answerable', 'width': '10%', noresize: true},
+						{'name': 'Yes', 'field': 'yes', 'width': '10%', noresize: true},
+						{'name': 'Maybe', 'field': 'maybe', 'width': '10%', noresize: true},
+						{'name': 'No', 'field': 'no', 'width': '10%', noresize: true},
+						{'name': 'No Response', 'field': 'noResponse', 'width': '10%', noresize: true},
+					]];
+						
+					var grid = new dojox.grid.EnhancedGrid({
+						id: 'gridReport',
+						store: store,
+						structure: layout,
+						rowSelector: '20px',
+						autoHeight: 50,},
+					document.createElement('div'));
+					
+					dom.byId("gridReportDiv").appendChild(grid.domNode);
+						
+					grid.startup();
+					
+					// Build chart to display data
+ 
+					// Create the chart within it's "holding" node
+					chart = new Chart("chartDiv");
+ 
+					// Set the theme
+					chart.setTheme(theme);
+ 
+					// Add the only/default plot
+					chart.addPlot("default", {
+						type: Columns,
+						markers: false,
+						gap: 5
+					});
+ 
+					// Add axes
+					chart.addAxis("x", { title: "Products", titleOrientation: "away", labels: labelData, dropLabels: false, rotation: -30, majorLabels: true, majorTickStep: 1, minorTicks: false });
+					chart.addAxis("y", { title: "Tickets", vertical: true, fixLower: "major", fixUpper: "major", min: 0 });
+ 
+					// Add the series of data
+					chart.addSeries("Answerable - Yes", chartData, {stroke: {color: [0, 138, 82], width: 2}, fill: [140, 198, 63]});
+					chart.addSeries("Answerable - Maybe", chartData2, {stroke: {color: [221, 115, 28], width: 2}, fill: [253, 184, 19]});
+					chart.addSeries("Total", chartDataTotal);
+					
+					// Highlight!
+					new Highlight(chart,"default");
+					
+					// Tooltip
+					new Tooltip(chart, "default");
+					
+					// Render the chart!
+					chart.render();
+					
+					// Legend
+					legend = new Legend({chart: chart, horizontal: false}, "chartLegend");
+				}, function(err){
+					console.log("ticketAnswerable: renderReport() - An unexpected error occurred: " + err);
+				});
+			}, function(err){
+				console.log("ticketAnswerable: renderReport() - An unexpected error occurred: " + err);
+			});
+		}, function(err){
+			console.log("ticketAnswerable: renderReport() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function refreshReportData() {
+	require([
+		"dojo/dom-form",
+		"dojox/grid/EnhancedGrid",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/constants/Constants"
+	],
+	function (domForm, EnhancedGrid, ItemFileWriteStore, Constants) {
+		var gdata = {
+			identifier: 'id',
+			items: []
+		}
+		
+		var chartData = [];
+		var chartData2 = [];
+		var chartDataTotal = [];
+	
+		var labelData = [];
+		
+		var count = 1;
+		var ticketMin = domForm.fieldToObject("ticketMin");
+		reportDataExport.forEach(function(product) {
+			if (product.total >= ticketMin) {
+				var answerable = ((product.yes) / product.total) * 100;
+				answerable = Math.round(answerable);
+				gdata.items.push(dojo.mixin({id: product.product}, {name: product.product}, product));
+				chartData.push({x: 1, y: 0});
+				chartData.push({
+					x: count,
+					y: product.yes,
+					tooltip: "Yes " + product.yes,
+					text: "Yes " + product.yes
+				});
+				chartData2.push({x: 1, y: 1});
+				chartData2.push({
+					x: count,
+					y: product.yes + product.maybe,
+					tooltip: "Maybe " + product.maybe,
+					text: "Maybe " + product.maybe
+				});
+				chartDataTotal.push({x: 1, y: 2});
+				chartDataTotal.push({
+					x: count,
+					y: product.total,
+					color: [208, 210, 211],
+					stroke: {color: [109, 110, 112], width: 2},
+					tooltip: "Total " + product.total,
+					text: "Total " + product.total
+				});
+				labelData.push({value: count, text: product.product});
+				count++;
+			}
+		});
+		
+		var xAxis = chart.getAxis("x");
+		xAxis.opt.labels = labelData;
+		chart.updateSeries("Answerable - Yes", chartData, {stroke: {color: [0, 138, 82], width: 2}, fill: [140, 198, 63]});
+		chart.updateSeries("Answerable - Maybe", chartData2, {stroke: {color: [221, 115, 28], width: 2}, fill: [253, 184, 19]});
+		chart.updateSeries("Total", chartDataTotal);
+		chart.render();
+		
+		var newStore = new ItemFileWriteStore({data: gdata});
+		var grid = dijit.byId("gridReport");
+		grid.setStore(newStore);
+		
+		return false;
+	});
+}
+
+function downloadReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"scripts/utils/JSUtil"
+	],
+	function(dom, domConstruct, JSUtil) {
+		var csvData = JSUtil.JSONToCSVConvertor(reportDataExport, true);
+		//console.log(csvData);
+		
+		var divDownloadReportLink = dom.byId("downloadReportLink");
+		domConstruct.empty(divDownloadReportLink);
+		var blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+		var url = URL.createObjectURL(blob);     
+		domConstruct.create("a", { id: "downloadLink", href: url, download: "export.csv", innerHTML: "link", style: "visibility:hidden" }, divDownloadReportLink);
+		var downloadLink = dom.byId("downloadLink");
+		downloadLink.click();
+	});
+}
+
+require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.ANALYTICS_SAVE_TICKET_ANSWERABLE_REPORT_DATA, function(data) {
+		reportDataExport = data;
+	});
+});
+</script>
+		
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div id="tabSelectReportAttachPoint" class="tab" onclick="showReportList();"><div id="tabSelectReportTextAttachPoint" class="tabText">Select Report</div></div>
+			<div id="tabDividerAttachPoint" class="tabDivider"></div>
+			<div id="tabReportAttachPoint" class="tabOn"><div id="tabReportNameAttachPoint" class="tabTextStatic">Ticket Answerable</div></div>
+		</div>
+		<div id="viewReportListAttachPoint" class="contentArea">
+			<div id="reportFiltersAttachPoint" class="filters">
+				<form id="filtersForm" onkeydown="if (event.keyCode == 13) { refreshReportData(); return false; }">
+				<div class="filtersText">Show products with</div>
+				<input id="ticketMin" name="ticketMin" class="filtersNumberField" type="text" value="100"/>
+				<div class="filtersText">tickets or more</div>
+				<button class="logBtnRefresh" type="button" onclick="refreshReportData();"></button>
+				<button class="btnDownload" type="button" onclick="downloadReport();"></button>
+				</form>
+			</div>
+			<div class="chartArea">
+				<table>
+					<tr>
+						<td><div id="chartDiv" class="barChart"></div></td>
+						<td class="barChartLegendCell"><div id="chartLegend"></div></td>
+					</tr>
+				</table>
+			</div>
+			<div class="gridArea">
+				<div id="gridReportDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadReportLink"></div>
+		</div>
+	</div>
+
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/btnRefreshOn.png",
+				"images/btnDownloadOn.png"
+			)
+		</script>
+	</div>
+	-->
+</div>

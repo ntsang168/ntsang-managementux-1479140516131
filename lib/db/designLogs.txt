@@ -1,0 +1,70 @@
+{
+  "_id": "_design/filters",
+  "_rev": "36-e557e1f5bf84e6077a8fd668ee0be9e9",
+  "views": {
+    "00-hub": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"00-hub\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "all": {
+      "map": "function(doc) {\n    emit([doc.timestamp,doc.severity], doc.messageId);\n}"
+    },
+    "01-ticketreader": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"01-ticketreader\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "02-scorer": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"02-scorer\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "03-messagemanager": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"03-messagemanager\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "04-dialogmanager": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"04-dialogmanager\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "05-ticketwriter": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"05-ticketwriter\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "06-analytics": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"06-analytics\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "07-pipeline": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"07-pipeline\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "08-collection": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"08-collection\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    },
+    "09-managementux": {
+      "map": "function(doc) {\n    if (doc.emittedBy.indexOf(\"09-managementux\") >= 0) {\n        emit([doc.timestamp,doc.severity], doc.messageId);\n    }\n}"
+    }
+  },
+  "indexes": {}
+}
+
+{
+  "_id": "_design/search",
+  "_rev": "9-2b7f85f85fd4fce82db36ec08b6f070a",
+  "views": {},
+  "language": "javascript",
+  "indexes": {
+    "messageAndInfo": {
+      "analyzer": "standard",
+      "index": "function(doc){\n if (doc.message) {\n     index(\"message\", doc.message, {\"store\":true});\n}\nif (doc.additionalInformation) {\n    index(\"additionalInformation\", JSON.stringify(doc.additionalInformation), {\"store\":true});\n}\n}"
+    },
+    "message": {
+      "analyzer": "standard",
+      "index": "function(doc){\n if(doc.message) {\n     index(\"message\", doc.message, {\"store\":true})\n }\n}"
+    }
+  }
+}
+
+{
+  "_id": "_design/ux",
+  "_rev": "19-ac042551721b546c1c723d64a1be2965",
+  "views": {
+    "answersReceived": {
+      "map": "function (doc) {\n    if (doc.additionalInformation.ticketId && (doc.emittedBy.indexOf(\"00-hub\") >= 0) && doc.message == \"New answers received\") {\n        emit(doc.additionalInformation.ticketId, [doc._id, doc.timestamp, doc.additionalInformation.trId]);\n    }\n}"
+    },
+    "testReport": {
+      "map": "function (doc) {\n    if (doc.messageId == \"WFS00-TestReport\") {\n  emit(doc._id, [doc.timestamp, doc.message, doc.additionalInformation]);\n    }\n}"
+    }
+  }
+}

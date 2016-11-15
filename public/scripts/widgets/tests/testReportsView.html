@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="pragma" content="no-cache">
+<title>Test Page for Trending View Widget used for Reports</title>
+<style type="text/css">
+	@import "../css/TrendingView.css";
+	
+	.period-selector-container {
+		padding-bottom: 50px;
+	}	
+
+	.period-selector {		
+		padding-left: 3px;
+		padding-right: 3px;
+		float:right;
+	}
+	
+	.period-selector.active{
+		border-bottom: 2px solid rgb(241, 144, 39);		
+	}
+	
+	.period-selector.hover{
+		border-bottom: 2px solid gray;		
+	}
+	
+	.period-selector a:link {
+   	 text-decoration: none;
+   	 color: gray;
+	}
+	
+	.period-selector a:visited {
+	    text-decoration: none;
+	    color: gray;
+	}
+	
+	.period-selector a:hover {
+	    text-decoration: none;
+	    color: gray;
+	}
+	
+	.period-selector a:active {
+	    text-decoration: none;
+	    color: gray;
+	}
+</style>
+
+	
+	<link href="http://ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/tundra/tundra.css" rel="stylesheet" title="www" type="text/css" />
+	<style type="text/css">
+		@import url("http://ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/enhanced/resources/tundra/EnhancedGrid.css");
+		@import url("http://ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/enhanced/resources/EnhancedGrid.css");
+		@import "../../../style/style.css";
+		@import "../../../style/editor.css";
+	</style>
+	
+	<script type="text/javascript">
+		
+		var dojoConfig = {
+			async: true,
+			baseUrl:'../../../',
+			paths: {
+				"scripts":  "scripts"
+			}
+		};
+	</script>
+	<script src="../../lib/aceNoConflict/ace.js" type="text/javascript" charset="utf-8"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"></script>
+</head>
+<body class="tundra">
+
+	
+<script>
+var currentTimeframe = "monthly";
+
+require([
+	"dojo/dom",
+    "scripts/widgets/TrendingView",
+    "dijit/registry",
+    "dojo/date/locale",
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/parser",
+	"dojo/query",
+	"dojo/domReady!"
+],
+function(dom, TrendingView, registry, localeDate, domClass, on, parser, query) {
+	
+	parser.parse();
+	
+
+	
+	/**
+	 * Given a current period calculates what the last period should be based on the format of the period provided and the periodFilter.
+
+	 * @param String representing the current period to filter. Expected formats year: yyyy, month: yyyy-mm, day: yyyy-mm-dd
+	 * @param (optional) String periodFilter optional value representing the current period to filter by. Expected values: daily, weekly, monthly and yearly. 
+	 * By default the code assumes the last period based on the format of the date passed in the first argument. The periodFilter is used primarily for weekly period
+	 * to remove ambiguity since the format for weekly period would still be same as daily yyyy-mm-dd.
+	 * Example: If a month format provided yyyy-mm then it looks at the last month for the periodFilter.
+	 * If monthly period provided: 2015-06 then last period is 2015-5. If period is 2015 then last period is 2016.
+	 * @return String representing the last period based on the period provided as input.
+	 */
+	function getLastPeriod(period, periodFilter) {
+		if(!period) {
+			return null;
+		}
+		var datePieces = period.split("-");
+		var y, m = 0;
+		var d = 1;
+		switch (datePieces.length) {
+		case 1:
+			y = datePieces[0] -1; // substract to get last year. 
+			break;
+			
+		case 2:
+			y = datePieces[0]; // substract to get last year. 
+			m = datePieces[1] - 2; // Months are zero based in js
+			break;
+			
+		case 3:
+			y = datePieces[0]; // substract to get last year. 
+			m = datePieces[1] -1;// Months are zero based in js
+			d = datePieces[2];
+			
+			if("weekly" === periodFilter) {
+				var dateInput = new Date(y,m,d);
+				d = dateInput.getDate() - dateInput.getDay() - 7;
+			} else {
+				d = d -1;
+			}	
+			break;
+
+		default:
+			return null;
+			break;
+		}
+		
+		var lastPeriod = new Date(y, m, d).toISOString();
+		
+		return lastPeriod.substring(0, period.length);
+	}
+	 
+	function getYearFormat(/*optional*/date) {
+		var date = (date) ? date  : new Date();
+		return date.getUTCFullYear() + "";
+	}
+	
+	function getMonthFormat(/*optional*/date){
+		var date = (date) ? date  : new Date();
+		var fmt = "yyyy-MM";
+		return localeDate.format( date, {selector:"date", datePattern:fmt } );
+	}
+	
+	function getFullDateFormat(/*optional*/date) {
+		
+		var date = (date) ? date  : new Date();
+		var fmt = "yyyy-MM-dd";
+		return localeDate.format( date, {selector:"date", datePattern:fmt } );
+	}
+	
+
+	
+	// Configure transactions report
+	loadTransactionsReport('monthly');
+	// Configure quality solution report
+	//loadSolutionQualityReport('monthly');
+	
+	query(".period-selector", "transactionsReport").on("click", function(event){
+		// remove the active indicator from the item that was selected previously
+		query(".active","transactionsReport").forEach(function(node){
+			domClass.toggle(node, "active");
+		});
+		domClass.toggle(event.currentTarget, "active");
+		
+				
+		if(event.currentTarget.dataset) {
+			var timeframe = event.currentTarget.dataset.timeframe;
+			currentTimeframe = timeframe;
+			loadTransactionsReport(timeframe);			
+		}		
+	});
+	
+	/**
+	* Depending on the period filter selected by the user, it submits a request to retrieve the transactions report with the period selected.
+	*/
+	function loadTransactionsReport(timeframe) {
+		//var url = 'hub/api/analytics/ticketskpi';
+		
+		/*if('yearly' === timeframe) {
+			url+= "?startDate=" + getYearFormat();
+		} else if('monthly' === timeframe) {
+			url+= "?startDate=" + getMonthFormat();
+		} else if('weekly' === timeframe) {
+			var today = new Date();
+			var firstDayWeekDate = new Date(today.setDate(today.getDate() - today.getDay()));
+			var lastDayWeekDate = new Date(today.setDate(today.getDate() - today.getDay() + 7));
+			url+= "?startDate=" + getFullDateFormat(firstDayWeekDate) + "&endDate=" + getFullDateFormat(lastDayWeekDate) + "&period=weekly";
+		} else {
+			url+= "?startDate=" + getFullDateFormat();
+		}*/
+		
+		var url = 'testdata/reports.json';
+		switch (timeframe) {
+			case "yearly":
+				url+= "?period=year";
+				break;
+			case "monthly":
+				url+= "?period=month";
+				break;
+			case "weekly":
+				url+= "?period=week";
+				break;
+			case "daily":
+				url+= "?period=day";
+				break;
+			default:
+				url+= "?period=month";
+		}
+		
+		var transactionsReportView = registry.byId('transactionsReportView');
+		transactionsReportView.targetURL = url;
+		transactionsReportView.reload();	
+	}
+	
+	
+	
+	query(".period-selector", "solutionQualityReport").on("click", function(event){
+		// remove the active indicator from the item that was selected previously
+		query(".active","solutionQualityReport").forEach(function(node){
+			domClass.toggle(node, "active");
+		});
+		domClass.toggle(event.currentTarget, "active");
+		
+		if(event.currentTarget.dataset) {
+			var timeframe = event.currentTarget.dataset.timeframe;
+			loadSolutionQualityReport(timeframe);			
+		}			
+	});
+	
+});
+
+
+
+</script>
+	<div id="content" class="contentBase">
+		<div id="contentOverview">
+			<table class="containerTable" border="0" id="kpiReport">
+			<tr>
+				<td>
+					<div class="tabs">
+						<div class="tabSpacer"></div>
+						<div class="tabStatic"><div class="tabTextStatic">Reports</div></div>
+					</div>
+					<div class="contentArea" id="transactionsReport">
+						<div class="reportArea">
+							<div class="period-selector-container">
+								<div class="filtersText">Filter Reports</div>
+								<select id="showReports" name="showReports" class="filtersSelectField" style="width: 25%;">
+									<option selected value="recent">Recent</option>
+									<option value="all">All</option>						
+								</select>							
+								
+								
+							</div>
+							<div id="transactionsReportView" data-dojo-type="scripts/widgets/TrendingView" data-dojo-props="reportName:'Report'" 
+								 style="width:600px; height:250px" ></div>
+						</div>
+						<div class="reportAreaFooter">
+						</div>
+					</div>
+				</td>
+				
+			</tr>
+			
+			</table>
+		</div>
+	</div>
+
+
+</body>
+</html>

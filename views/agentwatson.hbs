@@ -1,0 +1,38 @@
+<body onload="createAgentWindowWidget()" class="tundra">
+
+	<script type="text/javascript">
+		function createAgentWindowWidget() {
+			require([
+				"dojo/dom",
+				"com/ibm/watson/firstresponse/ux/AgentWindow"
+			], 
+			function(dom, AgentWindow) {
+				var agentWindow = new AgentWindow();
+				console.log(dom.byId("AgentWindow"));
+				agentWindow.placeAt(dom.byId("AgentWindow"));
+				agentWindow.startup();
+			});
+		}
+	</script>
+	
+	<div id="AgentWindow"></div>
+<!--
+	<pre id="editor">{
+		"id": "identifier",
+		"name": "your name"
+	}</pre>
+	
+<script>
+	require([
+		"ace/ace",
+		"ace/theme/tomorrow"
+	],
+	function() {
+		var editor = ace.edit("editor");
+		editor.setTheme("ace/theme/twilight");
+		editor.getSession().setMode("ace/mode/json");
+	});	
+</script>
+-->
+</body>
+

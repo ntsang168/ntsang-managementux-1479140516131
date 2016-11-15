@@ -1,0 +1,27 @@
+{
+  "name": "loc-logger",
+  "description": "Simplified method for writing log entries into Cloudant. Requires get-config.",
+  "keywords": [
+    "config",
+    "cloudant",
+    "first response",
+    "write logs"
+  ],
+  "version": "1.0.2",
+  "author": {
+    "name": "First response team",
+    "email": "not-defined-yet"
+  },
+  "publishConfig": {
+	  "registry": "http://localhost:4873"
+	},
+  "contributors": [{
+	  "name": "Janos Juhasz",
+	  "email": "janos.juhasz@hu.ibm.com"
+	}],
+  "main": "Logger.js",
+  "readme": "\n",
+  "readmeFilename": "README.md",
+  "_id": "local-logger@1.0.2",
+  "_from": "local-loggerg@"
+}

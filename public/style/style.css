@@ -1,0 +1,1735 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    overflow: auto;
+    padding: 0;
+    background-color: rgb(255, 255, 255);
+}
+
+/*
+ * Pre-load images
+ */
+body:after
+{
+content: url("../images/logoIBMSupportPoweredByIBMWatsonStackedOn.svg")
+         url("../images/leftNavAnalyticsOn.svg")
+		 url("../images/leftNavLoggingOn.svg")
+		 url("../images/leftNavTestingOn.svg")
+         url("../images/leftNavConfigureOn.svg")
+		 url("../images/leftNavAdministrationOn.svg")
+		 url("../images/btnAdd.png")
+		 url("../images/btnSave.png")
+		 url("../images/btnCancel.png")
+		 url("../images/btnAddOn.png")
+		 url("../images/btnSaveOn.png")
+		 url("../images/btnCancelOn.png")
+		 url("../images/btnRefreshOn.png")
+         url("../images/btnHistoryOn.png")
+         url("../images/btnCloseOn.png")
+         url("../images/btnRevertOn.png")
+		 url("../images/btnDownloadOn.png");
+display: none;
+}
+
+.hidden {
+    display: none;
+} 
+
+
+input[type=checkbox]:not(old),
+input[type=radio   ]:not(old){
+  width     : 25px;
+  margin    : 0;
+  padding   : 0;
+  font-size : 1em;
+  opacity   : 0;
+}
+
+input[type=checkbox]:not(old) + label,
+input[type=radio   ]:not(old) + label{
+  display      : inline-block;
+  margin-left  : -1.5em;
+  line-height  : 1.5em;
+}
+
+input[type=checkbox]:not(old) + label > span,
+input[type=radio   ]:not(old) + label > span{
+  display          : inline-block;
+  width            : 18px;
+  height           : 18px;
+  margin           : 0px;
+  border           : 2px solid RGB(146, 148, 151);
+  border-radius    : 3px;
+  background       : rgb(224,224,224);
+  background-image :    -moz-linear-gradient(RGB(241, 241, 242),RGB(230, 231, 232));
+  background-image :     -ms-linear-gradient(RGB(241, 241, 242),RGB(230, 231, 232));
+  background-image :      -o-linear-gradient(RGB(241, 241, 242),RGB(230, 231, 232));
+  background-image : -webkit-linear-gradient(RGB(241, 241, 242),RGB(230, 231, 232));
+  background-image :         linear-gradient(RGB(241, 241, 242),RGB(230, 231, 232));
+  vertical-align   : bottom;
+}
+
+input[type=checkbox]:not(old):checked + label > span,
+input[type=radio   ]:not(old):checked + label > span{
+  background-image :    -moz-linear-gradient(RGB(253, 184, 19),RGB(253, 184, 19));
+  background-image :     -ms-linear-gradient(RGB(253, 184, 19),RGB(253, 184, 19));
+  background-image :      -o-linear-gradient(RGB(253, 184, 19),RGB(253, 184, 19));
+  background-image : -webkit-linear-gradient(RGB(253, 184, 19),RGB(253, 184, 19));
+  background-image :         linear-gradient(RGB(253, 184, 19),RGB(253, 184, 19));
+}
+
+input[type=checkbox]:not(old):checked + label > span:before{
+  content     : '✓';
+  display     : block;
+  width       : 18px;
+  color       : rgb(255,255,255);
+  font-size   : 16px;
+  line-height : 20px;
+  text-align  : center;
+  text-shadow : 0 0 1px rgb(115,153,77);
+  font-weight : bold;
+}
+
+input[type=radio]:not(old):checked +  label > span > span{
+  display          : block;
+  width            : 0.5em;
+  height           : 0.5em;
+  margin           : 0.125em;
+  border           : 0.0625em solid rgb(115,153,77);
+  border-radius    : 0.125em;
+  background       : rgb(153,204,102);
+  background-image :    -moz-linear-gradient(rgb(179,217,140),rgb(153,204,102));
+  background-image :     -ms-linear-gradient(rgb(179,217,140),rgb(153,204,102));
+  background-image :      -o-linear-gradient(rgb(179,217,140),rgb(153,204,102));
+  background-image : -webkit-linear-gradient(rgb(179,217,140),rgb(153,204,102));
+  background-image :         linear-gradient(rgb(179,217,140),rgb(153,204,102));
+}
+
+
+
+.tundra .dojoxGrid {
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 13px;
+}
+
+.tundra .dojoxGridHeader, .tundra .dojoxGridHeader .dojoxGridCell {
+    height: 28px;
+	vertical-align: top;
+}
+
+.tundra .dojoxGridCell {
+    padding: 5px;
+}
+
+.tundra .dojoxGridRowOver .dojoxGridCell {
+	background-color: RGB(221, 115, 28); 
+	color:#fff;
+	cursor: pointer;
+}
+.tundra .dojoxGridRowOdd {
+	background-color: rgb(243, 236, 230);
+}
+.tundra .dojoxGridRowSelected {
+	background-color: rgb(255, 207, 1) !important;
+}
+
+.gridArea {
+    padding: 0px;
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(208, 210, 211);
+    font-size: 13px;
+}
+
+
+#header {
+    height: 50px;
+    width: 100%;
+    min-width: 1000px;
+    /*background-color: rgb(0, 178, 239);*/
+    background-color: rgb(168, 16, 36);
+    border-bottom: 1px solid rgb(88, 89, 91);
+    /*border-bottom: 1px solid rgb(255, 255, 255);*/
+}
+
+#headerDivider {
+    height: 1px;
+    width: 100%;
+    background-color: rgb(88, 89, 91);
+}
+
+.logo {
+    background-image: url('../images/logoIBMSupportPoweredByIBMWatsonStacked.svg');
+    height: 64px;
+    width: 200px;
+	cursor: pointer;
+}
+.logo:hover, .logo:focus {
+    background-image: url('../images/logoIBMSupportPoweredByIBMWatsonStackedOn.svg');
+}
+
+.navDivider {
+    float: left;
+    height: 100%;
+    width: 20px;
+}
+
+.navItem {
+    float: left;
+    padding: 18px 20px 0px 20px;
+    color: rgb(255, 255, 255);
+    text-align: center;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+.navItem:hover {
+    color: rgb(253, 184, 19);
+}
+.navItemOn {
+    float: left;
+    padding: 18px 20px 8px 20px;
+    border-bottom: 7px solid rgb(241, 144, 39);
+    color: rgb(255, 255, 255);
+    text-align: center;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.bodyContainer {
+    position: absolute;
+    width: 100%;
+    top: 0px;
+    bottom: 0px;
+}
+
+.bodyContainer > div {
+    position: absolute !important;
+}
+
+.leftNavBase {
+    width: 64px;
+    top: 0;
+    bottom: 0;
+    background-color: rgb(88, 89, 91);
+    border-right: 1px solid rgb(208, 210, 211);
+}
+.leftNavHover {
+    width: 200px;
+    top: 0;
+    bottom: 0;
+    background-color: rgb(88, 89, 91);
+    /*border-right: 1px solid rgb(208, 210, 211);*/
+}
+
+.leftNavDivider {
+    height: 20px;
+    
+}
+
+.leftNavItem {
+    margin-top: 2px;
+    height: 64px;
+    background-color: rgb(128, 129, 132);
+    cursor: pointer;
+}
+
+.leftNavItemOn {
+    margin-top: 2px;
+    height: 64px;
+    background-color: rgb(241, 144, 39);
+    cursor: pointer;
+}
+
+.leftNavItemDisabled {
+    margin-top: 2px;
+    height: 64px;
+    background-color: rgb(128, 129, 132);
+    cursor: default;
+}
+
+.leftNavItemConfigure {
+    height: 64px;
+    background-image: url('../images/leftNavConfigure.svg');
+}
+.leftNavItemConfigure:hover, .leftNavItemConfigure:focus {
+    background-image: url('../images/leftNavConfigureOn.svg');
+}
+.leftNavItemConfigureSelected {
+    height: 64px;
+    background-image: url('../images/leftNavConfigure.svg');
+	cursor: default;
+}
+.leftNavItemConfigureDisabled {
+    height: 64px;
+    background-image: url('../images/leftNavConfigure.svg');
+}
+
+.leftNavItemAnalytics {
+    height: 64px;
+    background-image: url('../images/leftNavAnalytics.svg');
+}
+.leftNavItemAnalytics:hover, .leftNavItemAnalytics:focus {
+    background-image: url('../images/leftNavAnalyticsOn.svg');
+}
+.leftNavItemAnalyticsSelected {
+    height: 64px;
+    background-image: url('../images/leftNavAnalytics.svg');
+	cursor: default;
+}
+.leftNavItemAnalyticsDisabled {
+    height: 64px;
+    background-image: url('../images/leftNavAnalytics.svg');
+}
+
+.leftNavItemLogging {
+    height: 64px;
+    background-image: url('../images/leftNavLogging.svg');
+}
+.leftNavItemLogging:hover, .leftNavItemLogging:focus {
+    background-image: url('../images/leftNavLoggingOn.svg');
+}
+.leftNavItemLoggingSelected {
+    height: 64px;
+    background-image: url('../images/leftNavLogging.svg');
+	cursor: default;
+}
+.leftNavItemLoggingDisabled {
+    height: 64px;
+    background-image: url('../images/leftNavLogging.svg');
+}
+
+.leftNavItemAdministration {
+    height: 64px;
+    background-image: url('../images/leftNavAdministration.svg');
+}
+.leftNavItemAdministration:hover, .leftNavItemAdministration:focus {
+    background-image: url('../images/leftNavAdministrationOn.svg');
+}
+.leftNavItemAdministrationSelected {
+    height: 64px;
+    background-image: url('../images/leftNavAdministration.svg');
+	cursor: default;
+}
+.leftNavItemAdministrationDisabled {
+    height: 64px;
+    background-image: url('../images/leftNavAdministration.svg');
+}
+
+.leftNavItemTesting {
+    height: 64px;
+    background-image: url('../images/leftNavTesting.svg');
+}
+.leftNavItemTesting:hover, .leftNavItemTesting:focus {
+    background-image: url('../images/leftNavTestingOn.svg');
+}
+.leftNavItemTestingSelected {
+    height: 64px;
+    background-image: url('../images/leftNavTesting.svg');
+	cursor: default;
+}
+.leftNavItemTestingDisabled {
+    height: 64px;
+    background-image: url('../images/leftNavTesting.svg');
+}
+
+.contentBase {
+    left: 65px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow:scroll;
+}
+.contentHover {
+    left: 201px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow:scroll;
+}
+
+.contentArea {
+	min-width: 1100px;
+    background-color: rgb(241, 241, 242);
+    margin: 0px 10px 0px 10px;
+    padding: 10px 10px 10px 10px;
+    border: 1px solid rgb(208, 210, 211);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.contentAreaError {
+	min-width: 1100px;
+    background-color: rgb(241, 241, 242);
+    margin: 10px 10px 0px 10px;
+    padding: 10px 10px 10px 10px;
+    border: 1px solid rgb(208, 210, 211);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.contentAreaLogging {
+	min-width: 1100px;
+    background-color: rgb(241, 241, 242);
+    margin: 0px 10px 0px 10px;
+    /*padding: 10px 10px 10px 10px;*/
+    border: 1px solid rgb(208, 210, 211);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+	
+
+
+.tabLeftSpacer {
+    float: left;
+    width: 15px;
+    height: 30px;
+    margin: 10px 0px 0px 0px;
+}
+
+.tabs {
+    height: 30px;
+    /*background-color: rgb(208, 210, 211);*/
+    margin: 10px 10px 0px 10px;
+    /*border: 1px solid rgb(208, 210, 211);*/
+}
+
+.tabSpacer {
+    float: left;
+    height: 30px;
+    width: 20px;
+}
+.tabSpacerRight {
+    float: right;
+    height: 30px;
+    width: 20px;
+}
+
+.tabDivider {
+    float: left;
+    height: 30px;
+    width: 20px;
+    background: url('../images/tabDivider.png');
+}
+
+.tab {
+    float: left;
+    height: 30px;
+    margin-left: 1px;
+    padding: 0px 10px 0px 10px;
+    background-color: rgb(166, 168, 171); /*rgb(208, 210, 211);*/
+    border-left: 1px solid rgb(109, 110, 112);
+    border-top: 1px solid rgb(109, 110, 112);
+    border-right: 1px solid rgb(109, 110, 112);
+    /*border-right: 1px solid rgb(255, 255, 255);*/
+    cursor: pointer;
+}
+.tabOn {
+    float: left;
+    height: 30px;
+    margin-left: 1px;
+    padding: 0px 10px 0px 10px;
+    background-color: rgb(241, 144, 39);
+    border-left: 1px solid rgb(109, 110, 112);
+    border-top: 1px solid rgb(109, 110, 112);
+    border-right: 1px solid rgb(109, 110, 112);
+    /*cursor: pointer;*/
+}
+.tabStatic {
+    float: left;
+    height: 30px;
+    margin-left: 1px;
+    padding: 0px 10px 0px 10px;
+    background-color: rgb(166, 168, 171); /*rgb(208, 210, 211);*/
+    border-left: 1px solid rgb(109, 110, 112);
+    border-top: 1px solid rgb(109, 110, 112);
+    border-right: 1px solid rgb(109, 110, 112);
+}
+
+.tabRight {
+    float: right;
+}
+
+.tabText {
+    margin-top: 7px;
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+.tabText:hover, .tabText:focus {
+    color: rgb(255, 207, 1);
+}
+.tabTextOn {
+    margin-top: 7px;
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.tabTextStatic {
+    margin-top: 7px;
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.subTab {
+    float: left;
+    height: 25px;
+    margin-top: 5px;
+    margin-left: 1px;
+    padding: 0px 5px 0px 5px;
+    /*background-color: RGB(187, 189, 191);*/
+    background-color: RGB(221, 115, 28);
+    border-left: 1px solid rgb(109, 110, 112);
+    border-top: 1px solid rgb(109, 110, 112);
+    border-right: 1px solid rgb(109, 110, 112);
+    cursor: pointer;
+}
+
+.subTabText {
+    float: left;
+    margin-top: 5px;
+    padding: 0px 0px 0px 5px;
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+}
+.subTabText:hover, .subTabText:focus {
+    color: rgb(255, 207, 1);
+}
+
+.btnDownload {
+    height: 25px;
+    width: 100px;
+    background-image: url('../images/btnDownload.png');
+}
+.btnDownload:hover, .btnDownload:focus {
+    background-image: url('../images/btnDownloadOn.png');
+}
+
+.containerTable {
+    padding: 0px;
+    border-spacing: 0px;
+}
+
+
+
+.textTable {
+    width: 100%;
+    padding: 5px 5px 5px 5px;
+    border-spacing: 0px;
+    border: 0px solid rgb(0, 0, 0);
+}
+.textTableRow {
+    height: 30px;
+    
+}
+.textTableFieldLabel {
+    width: 10%;
+    padding: 5px 5px 5px 5px;
+    vertical-align: top;
+    border-bottom: 1px solid rgb(208, 210, 211);
+}
+.textTableFieldValue {
+    padding: 5px 5px 5px 5px;
+    border-bottom: 1px solid rgb(208, 210, 211);
+}
+
+.fieldLabel {
+    width: 25%;
+}
+.fieldValue {
+    width: 75%;
+}
+
+
+.reportContentArea {
+    background-color: rgb(241, 241, 242);
+    margin: 0px 10px 0px 10px;
+    padding: 10px 10px 10px 10px;
+    border: 1px solid rgb(208, 210, 211);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.reportArea {
+    padding: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+.reportAreaFooter {
+	height: 20px;
+    padding: 5px 10px 5px 10px;
+    background-color: rgb(255, 255, 255);
+}
+.reportAreaFooterDisclaimer {
+	float: left;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 13px;
+}
+.reportAreaFooterLinks {
+	float: right;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 13px;
+}
+.reportAreaFooterLink {
+	cursor: pointer;
+}
+.reportAreaFooterLink:hover, .reportAreaFooterLink:focus {
+    color: rgb(241, 144, 39);
+}
+
+.reportOptions {
+    padding: 10px 0px 10px 0px;
+}
+
+.reportOptionBtn {
+    height: 30px;
+    padding: 3px;
+    background-color: rgb(166, 168, 171);
+    border: 1px solid rgb(109, 110, 112);
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+.reportOptionBtn:hover, .reportOptionBtn:focus {
+    background-color: rgb(241, 144, 39);
+}
+
+.reportAnswerEntry {
+    margin-bottom: 10px;
+}
+
+.selectReportTable {
+    width: 140px;
+    border-spacing: 0px;
+    margin: 0px;
+    padding: 0px;
+}
+.selectReportRow {
+    height: 30px;
+}
+
+.iconSelectReport {
+    width: 28px;
+    height: 28px;
+    background-image: url('../images/iconSelectReport.png');
+}
+.iconSelectReportHover {
+    width: 28px;
+    height: 28px;
+    background-image: url('../images/iconSelectReportHover.png');
+}
+.iconSelectReportText {
+    margin-top: 0px;
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+.iconSelectReportTextHover {
+    margin-top: 0px;
+    color: rgb(255, 207, 1);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.configOptions {
+    padding: 10px;
+}
+.configBtnEdit {
+    height: 30px;
+    width: 70px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnEdit.png');
+    cursor: pointer;
+}
+.configBtnEdit:hover, .configBtnEdit:focus {
+    background-image: url('../images/btnEditOn.png');
+}
+
+.configBtnSave {
+	float: left;
+    height: 30px;
+    width: 75px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnSave.png');
+    cursor: pointer;
+}
+.configBtnSave:hover, .configBtnSave:focus {
+    background-image: url('../images/btnSaveOn.png');
+}
+
+.configBtnHistory {
+    float: right;
+    height: 30px;
+    width: 100px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnHistory.png');
+    cursor: pointer;
+}
+.configBtnHistory:hover, .configBtnHistory:focus {
+    background-image: url('../images/btnHistoryOn.png');
+}
+
+.configBtnSaveDisabled {
+	float: left;
+    height: 30px;
+    width: 75px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnSave.png');
+	opacity: 0.5;
+    cursor: default;
+}
+
+.configBtnCancel {
+    height: 30px;
+    width: 90px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnCancel.png');
+    cursor: pointer;
+}
+.configBtnCancel:hover, .configBtnCancel:focus {
+    background-image: url('../images/btnCancelOn.png');
+}
+
+.configGroup {
+    padding: 10px;
+}
+
+.configGroupName {
+    padding: 5px;
+    font-weight: bold;
+}
+
+.configItem {
+    margin-left: 20px;
+    padding: 5px;
+}
+
+
+.reportGroup {
+    padding: 10px;
+}
+
+.reportGroupName {
+    padding: 5px;
+    font-weight: bold;
+}
+
+.reportItem {
+    margin-left: 20px;
+    padding: 5px;
+    cursor: pointer;
+}
+.reportItem:hover, .reportItem:focus {
+    color: rgb(241, 144, 39);
+}
+
+.logFilters {
+	height: 30px;
+    padding: 10px 10px 0px 10px;
+	/*border: 1px solid #000000;*/
+}
+
+.logFiltersSpacer {
+	float: left;
+	height: 30px;
+    width: 10px;
+}
+
+.logFiltersText {
+	float: left;
+	margin-top: 7px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.logFiltersTextSeverity {
+	float: left;
+	margin-top: 7px;
+	margin-left: 5px;
+	margin-right: 5px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 13px;
+}
+
+.logFiltersTextField {
+	float: left;
+    height: 20px;
+    width: 150px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.logFiltersTextField:focus, .logFiltersTextField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.logFiltersTextFieldId {
+	float: left;
+    height: 20px;
+    width: 300px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.logFiltersTextFieldId:focus, .logFiltersTextFieldId.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.logFiltersNumberField {
+	float: left;
+    height: 20px;
+    width: 50px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.logFiltersNumberField:focus, .logFiltersNumberField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.logFiltersSelectField {
+	float: left;
+    height: 30px;
+    width: 180px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.logFiltersSelectField:focus, .logFiltersSelectField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.logFiltersSelectFieldSm {
+	float: left;
+    height: 30px;
+    width: 80px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.logFiltersSelectFieldSm:focus, .logFiltersSelectFieldSm.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.logFiltersSeverityCheckboxes {
+	float: left;
+	height: 30px;
+	width: 310px;
+	margin-left: 10px;
+	margin-right: 20px;
+}
+
+.logBtnRefresh {
+	float: left;
+    height: 30px;
+    width: 100px;
+	margin-left: 10px;
+	margin-right: 10px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnRefresh.png');
+    cursor: pointer;
+}
+.logBtnRefresh:hover, .logBtnRefresh:focus {
+    background-image: url('../images/btnRefreshOn.png');
+}
+.logBtnRefreshDisabled {
+	float: left;
+    height: 30px;
+    width: 100px;
+	margin-left: 10px;
+	margin-right: 10px;
+    background-color: RGB(221, 115, 28);
+	opacity: 0.5;
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnRefresh.png');
+    cursor: wait;
+}
+
+.logBtnDownload {
+	float: right;
+    height: 30px;
+    width: 116px;
+	/*margin-left: 10px;
+	margin-right: 10px;*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnDownload.png');
+    cursor: pointer;
+}
+.logBtnDownload:hover, .logBtnDownload:focus {
+    background-image: url('../images/btnDownloadOn.png');
+}
+
+.logPagination {
+	height: 30px;
+    padding: 0px 0px 0px 0px;
+	background-color: RGB(230, 231, 232);
+	border-top: 1px solid rgb(208, 210, 211);
+	border-left: 1px solid rgb(208, 210, 211);
+	border-right: 1px solid rgb(208, 210, 211);
+}
+
+.logPaginationText {
+	float: left;
+	margin-top: 7px;
+	margin-left: 10px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.logPaginationBtns {
+	float: right;
+}
+
+.logBtnPrev {
+	float: left;
+    height: 20px;
+    width: 60px;
+	margin-top: 4px;
+	margin-right: 10px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnPrev.png');
+    cursor: pointer;
+}
+.logBtnPrev:hover, .logBtnPrev:focus {
+    background-image: url('../images/btnPrevOn.png');
+}
+
+.logBtnNext {
+	float: left;
+    height: 20px;
+    width: 60px;
+	margin-top: 4px;
+	margin-right: 10px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnNext.png');
+    cursor: pointer;
+}
+.logBtnNext:hover, .logBtnNext:focus {
+    background-image: url('../images/btnNextOn.png');
+}
+
+.logPaginationSelectField {
+	float: left;
+    height: 24px;
+    width: 120px;
+	margin-top: 3px;
+	margin-right: 10px;
+    padding: 2px;
+    border: 1px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 13px;
+}
+.logPaginationSelectField:focus, .logPaginationSelectField.focus {
+    outline: none!important;
+    border: 1px solid rgb(208, 210, 211);
+    box-shadow: 0 0 1px 2px rgb(241, 144, 39);
+}
+
+
+.logArea {
+	margin: 10px;
+    padding: 0px 0px 0px 0px;
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(208, 210, 211);
+    /*font-family: "Courier New", Courier, monospace;*/
+    font-size: 13px;
+}
+
+.logDefaultText {
+	padding: 5px;
+}
+
+.logProgressBar {
+	float: left;
+	width: 100px;
+	top: 5px;
+}
+
+.logGroup {
+    padding: 10px;
+}
+
+.logGroupName {
+    padding: 5px;
+    font-weight: bold;
+}
+
+.logItem {
+    margin-left: 20px;
+    padding: 5px;
+    cursor: pointer;
+}
+.logItem:hover, .logItem:focus {
+    color: rgb(241, 144, 39);
+}
+
+
+.filters {
+	height: 30px;
+    padding: 0px 0px 10px 0px;
+	/*border: 1px solid #000000;*/
+}
+
+.filtersText {
+	float: left;
+	margin-top: 7px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.statusText {
+	float: left;
+	margin-top: 7px;
+	margin-left: 10px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.errorText {
+	float: left;
+	margin-top: 7px;
+	margin-left: 10px;
+	height: 20px;
+	color: rgb(255, 0, 0);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.warningText {
+    float: left;
+    margin-top: 7px;
+    margin-left: 10px;
+    height: 20px;
+    color: rgb(241, 144, 39);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.successText {
+	float: left;
+	margin-top: 7px;
+	margin-left: 10px;
+	height: 20px;
+	color: RGB(0, 138, 82);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.filtersNumberField {
+	float: left;
+    height: 20px;
+    width: 60px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.filtersNumberField:focus, .filtersNumberField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.filtersSelectField {
+	float: left;
+    height: 30px;
+    width: 200px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.filtersSelectField:focus, .filtersSelectField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.filtersSelectFieldLong {
+	float: left;
+    height: 30px;
+    width: 300px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.filtersSelectFieldLong:focus, .filtersSelectFieldLong.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.tundra .dijitTooltipContainer {
+	border: 1px solid rgb(109, 110, 112);
+	font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.dojoxLegendNode {
+	margin-top: 20px;
+}
+
+.chartArea {
+	margin-bottom: 10px;
+    padding: 0px;
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(208, 210, 211);
+    font-size: 13px;
+}
+
+.barChart {
+	height: 400px;
+	width: 800px;
+}
+
+.barChartLegendCell {
+	vertical-align: top;
+}
+
+.btnDownload {
+	float: right;
+    height: 30px;
+    width: 116px;
+	/*margin-left: 10px;
+	margin-right: 10px;*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnDownload.png');
+    cursor: pointer;
+}
+.btnDownload:hover, .btnDownload:focus {
+    background-image: url('../images/btnDownloadOn.png');
+}
+
+.btnAdd {
+    height: 30px;
+    width: 70px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnAdd.png');
+    cursor: pointer;
+}
+.btnAdd:hover, .btnAdd:focus {
+    background-image: url('../images/btnAddOn.png');
+}
+
+.btnSave {
+	float: left;
+    height: 30px;
+    width: 75px;
+	margin-right: 10px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnSave.png');
+    cursor: pointer;
+}
+.btnSave:hover, .btnSave:focus {
+    background-image: url('../images/btnSaveOn.png');
+}
+
+.btnCancel {
+	float: left;
+    height: 30px;
+    width: 90px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnCancel.png');
+    cursor: pointer;
+}
+.btnCancel:hover, .btnCancel:focus {
+    background-image: url('../images/btnCancelOn.png');
+}
+
+.userContent {
+	height: 30px;
+	width: 100%;
+    background-color: rgb(241, 241, 242);
+    margin: 0px;
+	padding: 10px 0px 10px 0px;
+    border: 1px solid RGB(187, 189, 191);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+	overflow: auto;
+}
+
+.permissionsContent {
+	height: 300px;
+	width: 100%;
+    background-color: rgb(241, 241, 242);
+	margin-top: 10px;
+	padding: 10px 0px 10px 0px;
+    border: 1px solid RGB(187, 189, 191);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+	overflow: auto;
+}
+
+.submitContent {
+	width: 180px;
+	height: 36px;
+	margin-top: 10px;
+	margin-right: auto;
+	margin-bottom: 0px;
+	margin-left: auto;
+	/*border: 1px solid RGB(187, 189, 191);*/
+}
+
+.formText {
+	float: left;
+	margin-left: 10px;
+	margin-top: 7px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.formTextHeading {
+	margin-left: 10px;
+	margin-top: 7px;
+	height: 20px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+	font-weight: bold;
+}
+
+.formError {
+	float: left;
+	margin-top: 6px;
+	margin-left: 10px;
+	color: rgb(255, 0, 0);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.formDateField {
+	float: left;
+    height: 20px;
+    width: 220px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+	background: url('../images/dateField.png') no-repeat;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.formDateField:focus, .formDateField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.dateFieldContainer {
+	float: left;
+	position: relative;
+}
+.datePickerContainer {
+	position: absolute;
+	z-index: 1000;
+	display: inline;
+	top: 33px;
+	left: 0px;
+	padding: 2px;
+	background-color: #FFF;
+}
+
+.tundra .dijitCalendarContainer {border: 2px solid rgb(88, 89, 91);}
+.dijitCalendarDateTemplate { height: 24px; width: 24px; border: 1px solid rgb(88, 89, 91); vertical-align: top }
+.dijitCalendarDateLabel, .dijitCalendarDateTemplate { text-align: inherit }
+.dijitCalendarDayLabel { font-weight: normal }
+.dijitCalendarSelectedYear { font-size: 1.0em }
+.dijitCalendarMonthLabel { font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif; letter-spacing: 0.2em; font-size: 1.2em }
+
+.formTextField {
+	float: left;
+    height: 20px;
+    width: 300px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.formTextField:focus, .formTextField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.formTextFieldComments {
+    float: left;
+    height: 20px;
+    width: 800px;
+    margin-left: 0px;
+    margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.formTextFieldComments:focus, .formTextFieldComments.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+.formTextFieldCommentsInactive {
+    color: rgb(208, 210, 211);
+}
+
+.formNumberField {
+	float: left;
+    height: 20px;
+    width: 150px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.formNumberField:focus, .formNumberField.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.formSelectField {
+	float: left;
+    height: 30px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.formSelectField:focus, .formSelectField.focus {
+    outline: none!important;
+    border: 2px solid rgb(241, 144, 39);
+}
+
+.formCheckboxField {
+	float: left;
+    -ms-transform: scale(2); /* IE */
+    -moz-transform: scale(2); /* FF */
+    -webkit-transform: scale(2); /* Safari and Chrome */
+    -o-transform: scale(2); /* Opera */
+}
+
+.formSaveBtn {
+    height: 30px;
+    padding: 3px 10px 3px 10px;
+    background-color: rgb(166, 168, 171);
+    border: 1px solid rgb(109, 110, 112);
+    color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+.formSaveBtn:hover, .formSaveBtn:focus {
+    background-color: rgb(241, 144, 39);
+}
+
+.formTable {
+    width: 90%;
+    margin-left: 20px;
+	margin-top: 10px;
+    padding: 5px;
+    border: 0px solid rgb(0, 0, 0);
+}
+.formTableRow {
+    height: 30px;
+}
+.formTableCellText {
+	width: 25%;
+	padding: 10px;
+}
+.formTableCellValue {
+	width: 75%;
+	padding: 10px;
+}
+
+/*
+ * Ticket Dialog
+ */
+.tundra .dijitDialog {
+	border: 1px solid RGB(88, 89, 91);
+}
+
+.dijitDialogUnderlay {
+	background: rgb(88, 89, 91);
+	opacity: 0.6;
+}
+
+/*.dijitDialogPaneContent {
+    overflow-x: hidden;
+	overflow-y: auto;
+}*/
+
+.dijitDialogTitleBar {
+	color: rgb(255, 255, 255);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.tundra .dijitDialogTitleBar {
+	background: RGB(221, 115, 28);
+	padding: 8px;
+}
+
+
+/*
+ * Testing
+ */
+.testContentArea {
+    background-color: rgb(241, 241, 242);
+    margin: 0px 10px 0px 10px;
+    /*padding: 10px 10px 10px 10px;*/
+    border: 1px solid rgb(208, 210, 211);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+
+.testCaseResult {
+	height: 20px;
+	width: 100%;
+	padding: 2px;
+}
+
+.testCaseResultText {
+	float: left;
+	margin-right: 5px;
+}
+
+.testPass {
+	float: left;
+	height: 16px;
+	width: 16px;
+	background-image: url('../images/testPass.png');
+}
+.testFail {
+	float: left;
+	height: 16px;
+	width: 16px;
+	background-image: url('../images/testFail.png');
+}
+
+.testParameterField {
+	height: 25px;
+	width: 100%;
+	padding: 10px;
+}
+.testParameterFieldText {
+	height: 20px;
+	float: left;
+	margin-right: 10px;
+	padding-top: 5px;
+	font-weight: bold;
+}
+.testParameterFieldValue {
+	float: left;
+	margin-left: 10px;
+}
+
+.testStatusMsg {
+	min-height: 40px;
+	width: 100%;
+}
+.testStatusMsgSuccess {
+	background: #8CD211;
+}
+.testStatusMsgError {
+	background: #E71D32;
+}
+
+.testStatusMsgText {
+	padding: 10px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 20px;
+	color: #FFF;
+}
+
+.testStatusMsgUrl {
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 20px;
+	color: #FFF;
+}
+.testStatusMsgUrl:hover, .testStatusMsgUrl:focus {
+    color: #FFD791;
+}
+
+.testStatusMsgClose {
+	padding: 10px;
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 20px;
+	/*color: #FFD791;*/
+	color: #FFF;
+	cursor: pointer;
+}
+.testStatusMsgClose:hover, .testStatusMsgClose:focus {
+    /*color: #FFA573;*/
+	color: #FFD791;
+}
+
+.testCases {
+	/*height: 25px;*/
+	display:block;
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: 100%;
+	/*padding: 5px;*/
+}
+.testCasesHeading {
+	height: 20px;
+	width: 100px;
+	float: left;
+	margin-right: 10px;
+	padding-top: 5px;
+	font-weight: bold;
+}
+
+.moduleHeading {
+	margin-left: 10px;
+	margin-top: 10px;
+	padding: 5px;
+}
+
+.testCasesContent {
+	width: 95%;
+	margin-left: 20px;
+	padding: 5px;
+}
+
+.testCaseParamRequired {
+	color: #E71D32;
+}
+
+.testCaseParam {
+    height: 20px;
+    width: 300px;
+	margin-left: 10px;
+	margin-right: 10px;
+    padding: 3px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.testCaseParam:focus, .testCaseParam.focus {
+    outline: none!important;
+    border: 2px solid rgb(208, 210, 211);
+    box-shadow: 0 0 3px 4px rgb(241, 144, 39);
+}
+
+.testCaseParamSelect {
+    height: 30px;
+	margin-left: 10px;
+	margin-right: 10px;
+    border: 2px solid rgb(208, 210, 211);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+}
+.testCaseParamSelect:focus, .testCaseParamSelect.focus {
+    outline: none!important;
+    border: 2px solid rgb(241, 144, 39);
+}
+
+.testCasesDivider {
+	height: 1px;
+	width: 100%;
+	padding: 2px;
+	border-bottom: 1px solid RGB(187, 189, 191);
+}
+
+.btnExecute {
+	float: left;
+    height: 30px;
+    width: 100px;
+	margin-left: 20px;
+	margin-right: 10px;
+    /*padding: 0px 5px 0px 5px;*/
+    /*background-color: rgb(166, 168, 171);*/
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnExecute.png');
+    cursor: pointer;
+}
+.btnExecute:hover, .btnExecute:focus {
+    background-image: url('../images/btnExecuteOn.png');
+}
+.btnExecuteDisabled {
+	float: left;
+    height: 30px;
+    width: 100px;
+	margin-left: 20px;
+	margin-right: 10px;
+    background-color: RGB(221, 115, 28);
+	opacity: 0.5;
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnExecute.png');
+    cursor: wait;
+}
+
+.progressIndicator {
+	float: left;
+    background-image: url('../images/waiting.gif');
+    height: 20px;
+    width: 20px;
+	margin-top: 5px;
+}
+
+.testResultsContent {
+	width: 100%;
+    background-color: rgb(241, 241, 242);
+    margin: 0px;
+	padding: 10px 0px 10px 0px;
+    border: 1px solid RGB(187, 189, 191);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+	overflow: auto;
+}
+
+.testResults {
+	padding: 10px;
+}
+
+.testResultsOptionsContent {
+	width: 100px;
+	height: 36px;
+	margin-top: 10px;
+	margin-right: auto;
+	margin-bottom: 0px;
+	margin-left: auto;
+	/*border: 1px solid RGB(187, 189, 191);*/
+}
+
+.configDocContent {
+    width: 100%;
+    background-color: rgb(241, 241, 242);
+    margin: 0px;
+    padding: 0px 0px 10px 0px;
+    border: 1px solid RGB(187, 189, 191);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+    overflow: auto;
+}
+
+.configDoc {
+    padding: 10px;
+}
+
+.configDocOptionsContent {
+    width: 200px;
+    height: 36px;
+    margin-top: 10px;
+    margin-right: auto;
+    margin-bottom: 0px;
+    margin-left: auto;
+    /*border: 1px solid RGB(187, 189, 191);*/
+}
+
+.configDocText {
+    margin-bottom: 5px;
+}
+
+.configDocHeading {
+    font-weight: bold;
+}
+
+.configDocOptionsSpacer {
+    float: left;
+    height: 36px;
+    width: 10px;
+}
+
+.btnClose {
+	float: left;
+    height: 30px;
+    width: 80px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnClose.png');
+    cursor: pointer;
+}
+.btnClose:hover, .btnClose:focus {
+    background-image: url('../images/btnCloseOn.png');
+}
+
+.btnRevert {
+    float: left;
+    height: 30px;
+    width: 88px;
+    background-color: RGB(221, 115, 28);
+    border: 1px solid rgb(109, 110, 112);
+    background-image: url('../images/btnRevert.png');
+    cursor: pointer;
+}
+.btnRevert:hover, .btnRevert:focus {
+    background-image: url('../images/btnRevertOn.png');
+}

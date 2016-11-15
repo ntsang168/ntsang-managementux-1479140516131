@@ -1,0 +1,11 @@
+https://exchange.xforce.ibmcloud.com/vulnerabilities/104540
+https://exchange.xforce.ibmcloud.com/vulnerabilities/24889
+https://exchange.xforce.ibmcloud.com/vulnerabilities/98960
+https://exchange.xforce.ibmcloud.com/signature/CSS_IE_ASLR_Bypass
+https://exchange.xforce.ibmcloud.com/#/
+https://exchange.xforce.ibmcloud.com/#/vulnerabilities/
+ftp://ftp.software.ibm.com/software/iea/content/com.ibm.iea.wcs/wcs/x.0/Administration/wcsx0_PaymentsTechnicalOverview.pdf
+ftp://ftp.software.ibm.com/software/iea/content/com.ibm.iea.was_vx/was/x.0/Security/WASvx_AuditLab.pdf
+ftp://ftp.software.ibm.com/software/iea/content/com.ibm.iea.wcs/wcs/6.0/Administration/wcs60_PaymentsTechnicalOverview.pdf
+http://xforce.iss.net
+http://exchange.xforce.ibmcloud.com

@@ -1,0 +1,288 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+var existingUsers = {};
+	
+require([
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/parser",
+	"dijit/Dialog",
+	"dojo/domReady!"
+],
+function(domClass, on, parser, Dialog) {
+	parser.parse();
+	
+	loadUsers();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridUsers");
+		grid.resize();
+	});
+});
+
+function loadUsers() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/widgets/UserDialog",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+		"scripts/constants/Constants",
+	],
+	function (dom, domConstruct, topic, request,
+			  EnhancedGrid, GridPagination, ItemFileWriteStore,
+			  UserDialog, JSUtil, PubSubTopics, Constants) {
+		var url = "hub/api/administration/users";
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+		
+		var deferred = request(url, options);
+		deferred.then(function(users) {
+			console.log(users);
+			var gdata = {
+				identifier: 'id',
+				items: []
+			}
+			
+			var count = 1;
+			users.users.forEach(function(user) {
+				gdata.items.push({
+					id: count,
+					userid: user.userid,
+					configure: user.permissions.configure,
+					analytics: user.permissions.analytics,
+					logging: user.permissions.logging,
+					testing: user.permissions.testing,
+					administration: user.permissions.administration
+				});
+				existingUsers[user.userid] = true;
+				count++;
+			});
+				
+			var store = new ItemFileWriteStore({data: gdata});
+				
+			var layout = [[
+				{'name': 'User', 'field': 'userid', 'width': '20%', noresize: true},
+				{'name': 'Analytics', 'field': 'analytics', 'width': '16%', noresize: true},
+				{'name': 'Logging', 'field': 'logging', 'width': '16%', noresize: true},
+				{'name': 'Testing', 'field': 'testing', 'width': '16%', noresize: true},
+				{'name': 'Configure', 'field': 'configure', 'width': '16%', noresize: true},
+				{'name': 'Administration', 'field': 'administration', 'width': '16%', noresize: true}
+			]];
+				
+			var grid = new dojox.grid.EnhancedGrid({
+				id: 'gridUsers',
+				store: store,
+				structure: layout,
+				rowSelector: '20px',
+				autoHeight: true,
+				sortInfo: 1,
+				plugins: {
+					pagination: {
+						defaultPageSize: 20,
+						pageSizes: ["20", "50", "100"],
+						description: true,
+						sizeSwitch: true,
+						pageStepper: true,
+						gotoButton: true,
+						/*page step to be displayed*/
+						maxPageStep: 5,
+						/*position of the pagination bar*/
+						position: "top"
+					}
+				}
+			}, document.createElement('div'));
+			
+			dom.byId("gridDiv").appendChild(grid.domNode);
+			
+			grid.on("RowClick", function(evt){
+				var idx = evt.rowIndex,
+				rowData = grid.getItem(idx);
+				
+				var userContent = dom.byId("userContent");
+				domConstruct.empty(userContent);
+		
+				var dialog = new UserDialog({
+					newUser: false,
+					existingUsers: existingUsers,
+					userId: rowData.userid,
+					permissions: {
+						configure: rowData.configure[0],
+						analytics: rowData.analytics[0],
+						logging: rowData.logging[0],
+						testing: rowData.testing[0],
+						administration: rowData.administration[0],
+					}
+				});
+				dialog.placeAt(userContent);
+				dialog.startup();
+			
+				userDialog.set('title', "Edit user");
+				userDialog.show();
+			}, true);
+			
+			grid.startup();
+		}, function(err){
+			console.log("administration: loadUsers() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function refreshUsers() {
+	require([
+		"dojo/topic",
+		"dojo/request",
+		"dojox/grid/EnhancedGrid",
+		"dojo/data/ItemFileWriteStore"
+	],
+	function (topic, request,
+			  EnhancedGrid, ItemFileWriteStore) {
+		var url = "hub/api/administration/users";
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+		
+		var deferred = request(url, options);
+		deferred.then(function(users) {
+			console.log(users);
+			var gdata = {
+				identifier: 'id',
+				items: []
+			}
+			
+			var count = 1;
+			users.users.forEach(function(user) {
+				gdata.items.push({
+					id: count,
+					userid: user.userid,
+					configure: user.permissions.configure,
+					analytics: user.permissions.analytics,
+					logging: user.permissions.logging,
+					testing: user.permissions.testing,
+					administration: user.permissions.administration
+				});
+				existingUsers[user.userid] = true;
+				count++;
+			});
+			
+			var newStore = new ItemFileWriteStore({data: gdata});
+			var grid = dijit.byId("gridUsers");
+			grid.setStore(newStore);
+		}, function(err){
+			console.log("administration: refreshUsers() - An unexpected error occurred: " + err);
+		});
+
+				
+	});
+}
+
+function addUser() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"scripts/widgets/UserDialog"
+	], function(dom, domConstruct, UserDialog) {
+		var userContent = dom.byId("userContent");
+		domConstruct.empty(userContent);
+		
+		var dialog = new UserDialog({newUser: true, existingUsers: existingUsers});
+		dialog.placeAt(userContent);
+		dialog.startup();
+	
+		userDialog.set('title', "Add new user");
+		userDialog.show();
+	});
+}
+
+function saveUser(newUser, userId, permissions) {
+	require([
+		"dojo/request"
+	], function(request) {
+		var url = "hub/api/administration/user";
+		var options = {
+			method: "POST",
+			handleAs: "json",
+			data: {
+				newUser: newUser,
+				userId: userId,
+				permissions: permissions
+			}
+		}
+		
+		var deferred = request(url, options);
+		deferred.then(function(user) {
+			refreshUsers();
+		}, function(err){
+			console.log("administration: saveUser() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.ADMINISTRATION_USER_SAVE, function(newUser, userId, permissions) {
+		console.log(newUser, userId, permissions);
+		saveUser(newUser, userId, JSON.stringify(permissions));
+		userDialog.hide();
+	});
+	
+	topic.subscribe(PubSubTopics.ADMINISTRATION_USER_DIALOG_CANCEL, function() {
+		userDialog.hide();
+	});
+});
+</script>
+	
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div class="tabOn"><div class="tabTextOn">Users / Permissions</div></div>
+		</div>
+		<div class="contentArea">
+			<div id="adminOptions" class="filters">
+				<button class="btnAdd" type="button" onclick="addUser();"></button>
+			</div>
+			<div class="gridArea">
+				<div id="gridDiv" style="width:100%;"></div>
+			</div>
+		</div>
+	</div>
+
+	<div data-dojo-type="dijit/Dialog" data-dojo-id="userDialog" title="Add new user">
+		<div id="userContent"></div>
+	</div>
+	
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/btnAdd.png",
+				"images/btnSave.png",
+				"images/btnCancel.png",
+				"images/btnAddOn.png",
+				"images/btnSaveOn.png",
+				"images/btnCancelOn.png"
+			)
+		</script>
+	</div>
+	-->
+</div>

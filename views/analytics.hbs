@@ -1,0 +1,64 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+function showReport(reportName) {
+	window.location = "report?reportName=" + reportName;
+}
+</script>
+		
+	<div id="content" class="contentBase">
+			<div id="contentAnalytics">
+				<div class="tabs">
+					<div class="tabSpacer"></div>
+					<div id="tabSelectReportAttachPoint" class="tabOn" onclick="showReportList();"><div id="tabSelectReportTextAttachPoint" class="tabTextStatic">Select Report</div></div>
+					<div id="tabDividerAttachPoint" class="tabDivider hidden"></div>
+					<div id="tabReportAttachPoint" class="tabOn hidden"><div id="tabReportNameAttachPoint" class="tabTextStatic"></div></div>
+				</div>
+				<div id="viewReportListAttachPoint" class="contentArea">
+					<div class="reportGroup">
+						<div class="reportGroupName">Baseline</div>
+						<div class="reportItem" onclick="showReport('ticketsProcessedDetails');">Tickets Processed</div>
+						<div class="reportItem" onclick="showReport('ticketsProcessedWhitelistDetails');">Tickets Processed Whitelist</div>
+						<div class="reportItem" onclick="showReport('ticketsUpdatedDetails');">Tickets Updated</div>
+						<div class="reportItem" onclick="showReport('ticketsUpdatedKMMDetails');">Tickets Updated KMM</div>
+					</div>
+					<div class="reportGroup">
+						<div class="reportGroupName">Spotlight</div>
+						<div class="reportItem" onclick="showReport('spotlightTicketsProcessedDetails');">Spotlight Tickets Processed</div>
+						<div class="reportItem" onclick="showReport('spotlightTicketsProcessedWhitelistDetails');">Spotlight Tickets Processed Whitelist</div>
+						<div class="reportItem" onclick="showReport('spotlightTicketsUpdatedDetails');">Spotlight Tickets Updated</div>
+						<div class="reportItem" onclick="showReport('spotlightTicketsUpdatedKMMDetails');">Spotlight Tickets Updated KMM</div>
+					</div>
+					<div class="reportGroup">
+						<div class="reportGroupName">Hardware</div>
+						<div class="reportItem" onclick="showReport('hardwareTicketsUpdatedKMM');">Hardware Tickets Updated KMM</div>
+					</div>
+                    <div class="reportGroup">
+                        <div class="reportGroupName">Modified (On Demand)</div>
+                        <div class="reportItem" onclick="showReport('modifiedTicketsProcessedDetails');">Modified Tickets Processed</div>
+                        <div class="reportItem" onclick="showReport('modifiedTicketsUpdatedKMMDetails');">Modified Tickets Updated KMM</div>
+                    </div>
+                    <div class="reportGroup">
+                        <div class="reportGroupName">Dynamic Confidence</div>
+                        <div class="reportItem" onclick="showReport('dynamicConfidenceValues');">Dynamic Confidence Values</div>
+                        <div class="reportItem" onclick="showReport('dynamicConfidenceBuzzIn');">Dynamic Confidence Buzz In</div>
+                    </div>
+					<!--<div class="reportGroup">
+						<div class="reportGroupName">End User Profiling</div>
+						<div class="reportItem" onclick="showReport('batchProgress');">Batch Progress</div>
+						<div class="reportItem" onclick="showReport('ticketAnswerable');">Ticket Answerable Metrics</div>
+						<div class="reportItem" onclick="showReport('ticketAnswerableNoBad');">Ticket Answerable Metrics - No Bad Tickets</div>
+						<div class="reportItem" onclick="showReport('ticketDetails');">Ticket Details</div>
+						<div class="reportItem" onclick="showReport('ticketDetailsNoBad');">Ticket Details - No Bad Tickets</div>
+					</div>-->
+					<!--<div class="reportGroup">
+						<div class="reportGroupName">Sample Test Reports</div>
+						<div class="reportItem" onclick="showReport('sample');">PMR Count By Product</div>
+					</div>-->
+				</div>
+				<div id="viewReportAttachPoint" class="contentArea hidden"></div>
+			</div>
+	</div>
+
+</div>

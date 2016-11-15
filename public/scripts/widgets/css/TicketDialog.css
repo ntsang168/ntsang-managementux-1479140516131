@@ -1,0 +1,37 @@
+.infoContent {
+	width: 100%;
+    margin: 0px;
+    /*border: 1px solid RGB(0, 0, 0);*/
+	overflow: hidden;
+}
+
+.ticketContent {
+	float: left;
+	height: 300px;
+	width: 50%;
+    background-color: rgb(241, 241, 242);
+    border: 1px solid RGB(187, 189, 191);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.contentEntry {
+	padding: 5px;
+}
+
+.moreInfoContent {
+	float: right;
+	height: 300px;
+	width: 49%;
+    background-color: rgb(241, 241, 242);
+    border: 1px solid RGB(187, 189, 191);
+    color: rgb(64, 64, 65);
+    font-family: Helvetica, "Open Sans", Arial, "Lucida Grande", sans-serif;
+    font-size: 16px;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+

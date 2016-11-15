@@ -1,0 +1,22 @@
+{
+  "name": "get-config",
+  "description": "Simplified secure method of fetching config files from Cloudant.",
+  "tags": [
+    "config",
+    "cloudant",
+    "first response"
+  ],
+  "version": "1.0.1",
+  "author": {
+    "name": "Mike McCawley",
+    "email": "mmccawley@us.ibm.com"
+  },
+  "publishConfig": {
+	  "registry": "http://localhost:4873"
+	},
+  "main": "get-config.js",
+  "readme": "\n",
+  "readmeFilename": "README.md",
+  "_id": "get-config@1.0.0",
+  "_from": "get-config@"
+}

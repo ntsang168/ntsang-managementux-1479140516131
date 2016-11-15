@@ -1,0 +1,643 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+
+<style type="text/css">
+	@import "scripts/widgets/css/TrendingView.css";
+	
+	.period-selector-container {
+		padding-bottom: 50px;
+	}	
+
+	.period-selector {		
+		padding-left: 3px;
+		padding-right: 3px;
+		float:right;
+	}
+	
+	.period-selector.active{
+		border-bottom: 2px solid rgb(241, 144, 39);		
+	}
+	
+	.period-selector.hover{
+		border-bottom: 2px solid gray;		
+	}
+	
+	.period-selector a:link {
+   	 text-decoration: none;
+   	 color: gray;
+	}
+	
+	.period-selector a:visited {
+	    text-decoration: none;
+	    color: gray;
+	}
+	
+	.period-selector a:hover {
+	    text-decoration: none;
+	    color: gray;
+	}
+	
+	.period-selector a:active {
+	    text-decoration: none;
+	    color: gray;
+	}
+</style>
+	
+<script>
+var currentTimeframe = "monthly";
+
+require([
+	"dojo/dom",
+	"dojo/dom-form",
+    "scripts/widgets/TrendingView",
+    "dijit/registry",
+    "dojo/date/locale",
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/parser",
+	"dojo/query",
+	"dojo/domReady!"
+],
+function(dom, domForm, TrendingView, registry, localeDate, domClass, on, parser, query) {
+	
+	parser.parse();
+	
+	// Set Baseline refresh interval
+	setRefreshSolutionStatsInterval(null);
+	// Set Spotlight refresh interval
+	setRefreshSolutionStatsInterval("spotlight");
+    // Set Modified refresh interval
+    setRefreshSolutionStatsInterval("modified");
+		
+	/**
+	 * Given a current period calculates what the last period should be based on the format of the period provided and the periodFilter.
+
+	 * @param String representing the current period to filter. Expected formats year: yyyy, month: yyyy-mm, day: yyyy-mm-dd
+	 * @param (optional) String periodFilter optional value representing the current period to filter by. Expected values: daily, weekly, monthly and yearly. 
+	 * By default the code assumes the last period based on the format of the date passed in the first argument. The periodFilter is used primarily for weekly period
+	 * to remove ambiguity since the format for weekly period would still be same as daily yyyy-mm-dd.
+	 * Example: If a month format provided yyyy-mm then it looks at the last month for the periodFilter.
+	 * If monthly period provided: 2015-06 then last period is 2015-5. If period is 2015 then last period is 2016.
+	 * @return String representing the last period based on the period provided as input.
+	 */
+	function getLastPeriod(period, periodFilter) {
+		if(!period) {
+			return null;
+		}
+		var datePieces = period.split("-");
+		var y, m = 0;
+		var d = 1;
+		switch (datePieces.length) {
+		case 1:
+			y = datePieces[0] -1; // substract to get last year. 
+			break;
+			
+		case 2:
+			y = datePieces[0]; // substract to get last year. 
+			m = datePieces[1] - 2; // Months are zero based in js
+			break;
+			
+		case 3:
+			y = datePieces[0]; // substract to get last year. 
+			m = datePieces[1] -1;// Months are zero based in js
+			d = datePieces[2];
+			
+			if("weekly" === periodFilter) {
+				var dateInput = new Date(y,m,d);
+				d = dateInput.getDate() - dateInput.getDay() - 7;
+			} else {
+				d = d -1;
+			}	
+			break;
+
+		default:
+			return null;
+			break;
+		}
+		
+		var lastPeriod = new Date(y, m, d).toISOString();
+		
+		return lastPeriod.substring(0, period.length);
+	}
+	 
+	function getYearFormat(/*optional*/date) {
+		var date = (date) ? date  : new Date();
+		return date.getUTCFullYear() + "";
+	}
+	
+	function getMonthFormat(/*optional*/date){
+		var date = (date) ? date  : new Date();
+		var fmt = "yyyy-MM";
+		return localeDate.format( date, {selector:"date", datePattern:fmt } );
+	}
+	
+	function getFullDateFormat(/*optional*/date) {
+		
+		var date = (date) ? date  : new Date();
+		var fmt = "yyyy-MM-dd";
+		return localeDate.format( date, {selector:"date", datePattern:fmt } );
+	}
+	
+	// Load Baseline report
+	loadTransactionsReport('monthly', "baseline");
+	// Load Spotlight report
+    loadTransactionsReport('monthly', "spotlight");
+    // Load Modified report
+    loadTransactionsReport('monthly', "modified");
+	
+	// Configure quality solution report
+	//loadSolutionQualityReport('monthly');
+	
+	// Load the reports Dashboard
+	/*var filter = domForm.fieldToObject("showReports");
+	var reportsView = registry.byId('reportsView');
+	reportsView.targetURL = "hub/api/analytics/reports?filter=" + filter;
+	reportsView.reload();*/	
+	
+	renderReport(false);
+	
+	query(".period-selector", "transactionsReport").on("click", function(event){
+		// remove the active indicator from the item that was selected previously
+		query(".active","transactionsReport").forEach(function(node){
+			domClass.toggle(node, "active");
+		});
+		domClass.toggle(event.currentTarget, "active");
+		
+		if(event.currentTarget.dataset) {
+			var timeframe = event.currentTarget.dataset.timeframe;
+			currentTimeframe = timeframe;
+			loadTransactionsReport(timeframe, "baseline");
+		}		
+	});
+	
+	query(".period-selector", "spotlightSolutionStats").on("click", function(event){
+		// remove the active indicator from the item that was selected previously
+		query(".active","spotlightSolutionStats").forEach(function(node){
+			domClass.toggle(node, "active");
+		});
+		domClass.toggle(event.currentTarget, "active");
+		
+		if(event.currentTarget.dataset) {
+			var timeframe = event.currentTarget.dataset.timeframe;
+			currentTimeframe = timeframe;
+			loadTransactionsReport(timeframe, "spotlight");
+		}		
+	});
+
+    query(".period-selector", "modifiedSolutionStats").on("click", function(event){
+        // remove the active indicator from the item that was selected previously
+        query(".active","modifiedSolutionStats").forEach(function(node){
+            domClass.toggle(node, "active");
+        });
+        domClass.toggle(event.currentTarget, "active");
+
+        if(event.currentTarget.dataset) {
+            var timeframe = event.currentTarget.dataset.timeframe;
+            currentTimeframe = timeframe;
+            loadTransactionsReport(timeframe, "modified");
+        }
+    });
+	
+	/**
+	* Depending on the period filter selected by the user, it submits a request to retrieve the transactions report with the period selected.
+	*/
+	function loadTransactionsReport(timeframe, type) {
+		var url = 'hub/api/analytics/solutionstats';
+        var transactionsReportView = registry.byId('transactionsReportView');
+		if (type === "spotlight") {
+			url = 'hub/api/analytics/spotlight/solutionstats';
+            transactionsReportView = registry.byId('spotlightReportView');
+		} else if (type === "modified") {
+            url = 'hub/api/analytics/modified/solutionstats';
+            transactionsReportView = registry.byId('modifiedReportView');
+        }
+		switch (timeframe) {
+			case "yearly":
+				url+= "?period=year";
+				break;
+			case "monthly":
+				url+= "?period=month";
+				break;
+			case "weekly":
+				url+= "?period=week";
+				break;
+			case "daily":
+				url+= "?period=day";
+				break;
+			default:
+				url+= "?period=month";
+		}
+		transactionsReportView.targetURL = url;
+		transactionsReportView.reload();	
+	}
+	
+	/**
+	* Depending on the period filter selected by the user, it submits a request to retrieve the solution quality report with the period selected.
+	* For the solution quality report, always the last period is queried. For example if user selects the monthly period, then the report
+	* shows the last month report.
+	*/
+	function loadSolutionQualityReport(timeframe) {
+		var url = 'hub/api/analytics/solutionquality';
+		
+		// For solution quality we always look at the last period not the current one. Therefore need to do some calculation to 
+		// get the last period based on the timeframe selected by the user.		
+		if('yearly' === timeframe) {
+			var yearFormat = getYearFormat();
+			url+= "?startDate=" + getLastPeriod(yearFormat) + "&endDate=" + yearFormat;
+		} else if('monthly' === timeframe) {
+			var monthFormat = getMonthFormat();
+			url+= "?startDate=" + getLastPeriod(monthFormat) + "&endDate=" + monthFormat;
+		} else if('weekly' === timeframe) {
+			var today = new Date();
+			var firstDayWeekDate = new Date(today.setDate(today.getDate() - today.getDay()));
+			var lastDayWeekDate = new Date(today.setDate(today.getDate() - today.getDay() + 7));
+			url+= "?startDate=" + getLastPeriod(getFullDateFormat(firstDayWeekDate), timeframe) + "&endDate=" + getLastPeriod(getFullDateFormat(lastDayWeekDate), timeframe) + "&period=weekly";
+		} else {
+			var fullDate = getFullDateFormat();
+			url+= "?startDate=" + getLastPeriod(fullDate) + "&endDate=" + fullDate;
+		}
+		var solutionQualityReportView = registry.byId('solutionQualityReportView');
+		solutionQualityReportView.targetURL = url;
+		solutionQualityReportView.reload();	
+	}
+	
+	
+	query(".period-selector", "solutionQualityReport").on("click", function(event){
+		// remove the active indicator from the item that was selected previously
+		query(".active","solutionQualityReport").forEach(function(node){
+			domClass.toggle(node, "active");
+		});
+		domClass.toggle(event.currentTarget, "active");
+		
+		if(event.currentTarget.dataset) {
+			var timeframe = event.currentTarget.dataset.timeframe;
+			loadSolutionQualityReport(timeframe);			
+		}			
+	});
+	
+});
+
+function refreshSolutionStats(spotlight) {
+	require([
+		"dijit/registry"
+	],
+	function(registry) {
+		var now = new Date();
+		var url = "hub/api/analytics/refreshsolutionstats?timestamp=" + now.toISOString();
+		if (spotlight) {
+			url = "hub/api/analytics/spotlight/refreshsolutionstats?timestamp=" + now.toISOString();
+		}
+		switch (currentTimeframe) {
+			case "yearly":
+				url+= "&period=year";
+				break;
+			case "monthly":
+				url+= "&period=month";
+				break;
+			case "weekly":
+				url+= "&period=week";
+				break;
+			case "daily":
+				url+= "&period=day";
+				break;
+			default:
+				url+= "&period=month";
+		}
+		var transactionsReportView = registry.byId('transactionsReportView');
+		if (spotlight) {
+			transactionsReportView = registry.byId('spotlightReportView');
+		}
+		transactionsReportView.targetURL = url;
+		transactionsReportView.reload();	
+	});
+}
+
+function setRefreshSolutionStatsInterval(type) {
+	require([
+		"dojo/dom",
+		"dojo/request"
+	],
+	function(dom, request) {
+		var url = "hub/api/analytics/refreshsolutionstatsinterval";
+		if (type === "spotlight") {
+			url = "hub/api/analytics/spotlight/refreshsolutionstatsinterval";
+		} else if (type === "modified") {
+            url = "hub/api/analytics/modified/refreshsolutionstatsinterval";
+        }
+		
+		var options = {
+			method: "GET",
+			handleAs: "json"
+		};
+		
+		var deferred = request(url, options);
+		deferred.then(function(result){
+			var divRefreshInterval = dom.byId("solutionStatsRefreshInterval");
+			if (type === "spotlight") {
+				divRefreshInterval = dom.byId("spotlightSolutionStatsRefreshInterval");
+			} else if (type === "modified") {
+                divRefreshInterval = dom.byId("modifiedSolutionStatsRefreshInterval");
+            }
+			divRefreshInterval.innerHTML = result.refresh_interval;
+		}, function(error){
+			console.log("overview: setRefreshSolutionStatsInterval() - An unexpected error occurred: " + error);
+		});
+	});
+}
+
+function filterReports(select) {
+	
+	require([
+	 		"dijit/registry"
+	 	],
+	 	function(registry) {
+	
+		var selection = select.options[select.selectedIndex].value;
+		
+		/*var reportsView = registry.byId('reportsView');
+		reportsView.targetURL = "hub/api/analytics/reports?filter=" + selection;
+		reportsView.reload();	*/
+		
+		renderReport(true);
+		
+	});
+}
+
+
+function renderReport(refresh) {
+	require([
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-construct",
+		"dojo/_base/lang",
+		"dojo/topic",
+		"dojo/request",
+		"dojo/DeferredList",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"dojox/charting/Chart",
+		"dojox/charting/themes/Adobebricks",
+		"dojox/charting/plot2d/Bars",
+		"dojox/charting/plot2d/Columns",
+		"dojox/charting/action2d/Highlight",
+		"dojox/charting/action2d/Tooltip",
+		"dojox/charting/plot2d/Markers",
+		"dojox/charting/axis2d/Default",
+		"dojox/charting/widget/Legend",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+		"scripts/constants/Constants",
+	],
+	function (dom, domForm, domConstruct,lang, topic, request,
+			  DeferredList, EnhancedGrid, GridPagination, ItemFileWriteStore,
+			  Chart, theme, Bars, Columns, Highlight, Tooltip, Markers, Default, Legend,
+			  JSUtil, PubSubTopics, Constants) {
+		
+		// Get the filter selection
+		var filterSelection = document.getElementById("showReports");
+	
+		var url = "hub/api/analytics/reports?filter=" + filterSelection.options[filterSelection.selectedIndex].value;
+		var options = {
+			method: "GET",
+			handleAs: "json"
+		}
+		
+		showProgressBar();
+		var deferred = request(url, options);
+		deferred.then(function(results) {
+			var gdata = {
+				identifier: 'id',
+				items: null
+			}
+			
+			//var reportsData = [{'title' : 'Tickets Updated KMM', 'url' : 'reports/ticketsupdatedkmm/TicketsUpdatedKMM_20151122T172500651Z.zip', 'timestamp': '2015-11-22T17:25:00.651Z'}];
+			var reports = [];
+			var count = 0;
+			results.items.forEach(function(row) {
+				//console.log(row);
+				reports.push({
+					id: count,
+					title: row.title,
+					file: row.file,
+					timestamp: row.data[0].value,
+					url: row.url
+				});
+				
+				count++;
+			});
+			gdata.items = reports;		
+			
+			var store = new ItemFileWriteStore({data: gdata});
+			
+			if(!refresh) {
+				var layout = [[
+					{'name': 'Report', 'field': 'title', 'width': '50%', noresize: true},
+					{'name': 'Timestamp', 'field': 'timestamp', 'width': '50%', noresize: true}
+				]];
+				
+				var grid = new dojox.grid.EnhancedGrid({
+					id: 'gridReport',
+					store: store,
+					structure: layout,
+					rowSelector: '0px',
+					autoHeight: true,
+					selectable: true,
+					sortInfo: 1
+				}, document.createElement('div'));
+				
+				grid.on("RowClick", function(evt){
+					var idx = evt.rowIndex,
+					rowData = grid.getItem(idx);
+					console.log(rowData);
+					
+					var divDownloadReportLink = dom.byId("downloadReportLink");
+					domConstruct.empty(divDownloadReportLink);  
+					domConstruct.create("a", { id: "downloadLink", href: rowData.url[0], download: rowData.file[0], innerHTML: "link", style: "visibility:hidden" }, divDownloadReportLink);
+					var downloadLink = dom.byId("downloadLink");
+					downloadLink.click();
+				}, true);
+				
+				dom.byId("gridReportDiv").appendChild(grid.domNode);
+					
+				grid.startup();
+				hideProgressBar();		
+			
+			} else {
+				var grid = dijit.byId("gridReport");
+				grid.setStore(store);
+				hideProgressBar();
+			}
+		}, function(err){
+			hideProgressBar();
+			console.log("reports: renderReport() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function showProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		/*var progressBar = dom.byId("refreshProgress");
+		var btnRefresh = dom.byId("btnRefresh");
+		var gridDiv = dom.byId("gridReportDiv");
+		domClass.remove(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "0.5");
+		btnRefresh.removeAttribute("onclick");
+		domClass.remove(btnRefresh, "logBtnRefresh");
+		domClass.add(btnRefresh, "logBtnRefreshDisabled");*/
+	});
+}
+
+function hideProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		/*var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridReportDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.add(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "1.0");
+		btnRefresh.setAttribute("onclick", "renderReport(true)");
+		domClass.remove(btnRefresh, "logBtnRefreshDisabled");
+		domClass.add(btnRefresh, "logBtnRefresh");*/
+	});
+}
+</script>
+	<div id="content" class="contentBase">
+		<div id="contentOverview">
+			<table class="containerTable" border="0" id="kpiReport">
+			<tr>
+				<td>
+					<div class="tabs">
+						<div class="tabSpacer"></div>
+						<div class="tabStatic"><div class="tabTextStatic">Baseline</div></div>
+					</div>
+					<div class="reportContentArea" id="transactionsReport">
+						<div class="reportArea">
+							<div class="period-selector-container">
+								<!--<div class="filtersText">Filter Tickets</div>
+								<select id="showProduct" name="showProduct" class="filtersSelectField" style="width: 25%;">
+									<option value="all">All</option>
+									<option value="pmrs">PMRs</option>
+									 <option value="pmhs">PMHs</option>
+									<option value="rcms">RCMS</option>
+									<option value="cross">Cross</option>
+									<option value="parature">Parature</option> 							
+								</select>-->					
+								
+								<span class="period-selector" data-timeframe='yearly'><a href="javascript:;">Yearly</a></span>
+								<span class="period-selector active" data-timeframe='monthly'><a href="javascript:;">Monthly</a></span>
+								<span class="period-selector" data-timeframe='weekly'><a href="javascript:;">Weekly</a></span>
+								<span class="period-selector" data-timeframe='daily'><a href="javascript:;">Daily</a></span>
+							</div>
+							<div id="transactionsReportView" data-dojo-type="scripts/widgets/TrendingView" data-dojo-props="reportName:'Baseline'"
+								 style="width:600px; height:250px" ></div>
+						</div>
+						<div class="reportAreaFooter">
+							<div class="reportAreaFooterDisclaimer">* Data refreshed every <span id="solutionStatsRefreshInterval"></span> min</div>
+							<div class="reportAreaFooterLinks"><div class="reportAreaFooterLink" onclick="refreshSolutionStats(false);">Refresh Now</div></div>
+						</div>
+					</div>
+				</td>
+				
+				<td>
+					<div class="tabs">
+						<div class="tabSpacer"></div>
+						<div class="tabStatic"><div class="tabTextStatic">Spotlight</div></div>
+					</div>
+					<div class="reportContentArea" id="spotlightSolutionStats">
+						<div class="reportArea">
+							<div class="period-selector-container">
+								<!--<div class="filtersText">Filter Tickets</div>
+								<select id="showProduct" name="showProduct" class="filtersSelectField" style="width: 25%;">
+									<option value="all">All</option>
+									<option value="pmrs">PMRs</option>
+									<option value="pmhs">PMHs</option>
+									<option value="rcms">RCMS</option>
+									<option value="cross">Cross</option>
+									<option value="parature">Parature</option> 						
+								</select>-->							
+								
+								<span class="period-selector" data-timeframe='yearly'><a href="javascript:;">Yearly</a></span>
+								<span class="period-selector active" data-timeframe='monthly'><a href="javascript:;">Monthly</a></span>
+								<span class="period-selector" data-timeframe='weekly'><a href="javascript:;">Weekly</a></span>
+								<span class="period-selector" data-timeframe='daily'><a href="javascript:;">Daily</a></span>
+							</div>
+							<div id="spotlightReportView" data-dojo-type="scripts/widgets/TrendingView" data-dojo-props="reportName:'Spotlight'" 
+								 style="width:600px; height:250px" ></div>
+						</div>
+						<div class="reportAreaFooter">
+							<div class="reportAreaFooterDisclaimer">* Data refreshed every <span id="spotlightSolutionStatsRefreshInterval"></span> min</div>
+							<div class="reportAreaFooterLinks"><div class="reportAreaFooterLink" onclick="refreshSolutionStats(true);">Refresh Now</div></div>
+						</div>
+					</div>
+				</td>
+			</tr>
+			
+			<tr>
+				<td>
+					<div class="tabs">
+						<div class="tabSpacer"></div>
+						<div class="tabStatic"><div class="tabTextStatic">Reports</div></div>
+					</div>
+					<div class="reportContentArea" id="reports">
+						<div class="reportArea">
+							<div class="period-selector-container">
+								<div class="filtersText">Filter Reports</div>
+								<select id="showReports" name="showReports" class="filtersSelectField" style="width: 25%;" onChange="filterReports(this);">
+									<option selected value="recent">Recent</option>
+									<option value="all">All</option>						
+								</select>							
+								
+								
+							</div>
+							<!--  <div id="reportsView" data-dojo-type="scripts/widgets/TrendingView" data-dojo-props="reportName:'Report'" 
+								 style="width:600px; height:250px; overflow: auto" ></div>-->
+								 
+								 <div class="gridArea" style="width:600px; height:250px; overflow: auto">
+									<div id="gridReportDiv" style="width:100%;"></div>
+								</div>
+						</div>
+						<div class="reportAreaFooter">
+						</div>
+					</div>
+				</td>
+				
+				<td>
+                    <div class="tabs">
+                        <div class="tabSpacer"></div>
+                        <div class="tabStatic"><div class="tabTextStatic">Modified (On Demand)</div></div>
+                    </div>
+                    <div class="reportContentArea" id="modifiedSolutionStats">
+                        <div class="reportArea">
+                            <div class="period-selector-container">
+                                <span class="period-selector" data-timeframe='yearly'><a href="javascript:;">Yearly</a></span>
+                                <span class="period-selector active" data-timeframe='monthly'><a href="javascript:;">Monthly</a></span>
+                                <span class="period-selector" data-timeframe='weekly'><a href="javascript:;">Weekly</a></span>
+                                <span class="period-selector" data-timeframe='daily'><a href="javascript:;">Daily</a></span>
+                            </div>
+                            <div id="modifiedReportView" data-dojo-type="scripts/widgets/TrendingView" data-dojo-props="reportName:'Modified'"
+                                 style="width:600px; height:250px" ></div>
+                        </div>
+                        <div class="reportAreaFooter">
+                            <div class="reportAreaFooterDisclaimer">* Data refreshed every <span id="modifiedSolutionStatsRefreshInterval"></span> min</div>
+                            <div class="reportAreaFooterLinks"><div class="reportAreaFooterLink" onclick="">Refresh Now</div></div>
+                        </div>
+                    </div>
+                </td>
+				</td>
+			</tr>
+			</table>
+			<div id="downloadReportLink"></div>
+		</div>
+	</div>
+
+</div>

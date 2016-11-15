@@ -1,0 +1,2 @@
+http://pic.dhe.ibm.com/infocenter/cqhelp/v7r1m2/topic/com.ibm.rational.clearquest.install_upgrade.doc/topics/c_config_licensing.htm?resultof=%22%54%6f%6b%65%6e%22%20%22%74%6f%6b%65%6e%22%20%22%6c%69%63%65%6e%73%65%73%22%20%22%6c%69%63%65%6e%73%22%20
+http://www-01.ibm.com/support/knowledgecenter/SSFKSJ_7.1.0/com.ibm.mq.doc/fr12610_.htm?lang=en    

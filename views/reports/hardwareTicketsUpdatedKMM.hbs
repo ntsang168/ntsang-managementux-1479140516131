@@ -1,0 +1,417 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/parser",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/request",
+	"dojo/on",
+	"dijit/ProgressBar",
+	"dojo/domReady!"
+],
+function(parser, dom, domClass, request, on, ProgressBar) {
+	var reportDataExport = null;
+	var reportDownloadURL = "";
+	
+	var startDateField = dom.byId("startDate");
+	startDateField.value = (new Date()).toISOString().substring(0,10) + "T00:00:00.000Z";
+	
+	renderReport(false);
+	
+	parser.parse();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridReport");
+		grid.resize();
+	});
+});
+
+function showReportList() {
+	window.location = "analytics";
+}
+
+function renderReport(refresh) {
+	require([
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojo/DeferredList",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"dojox/charting/Chart",
+		"dojox/charting/themes/Adobebricks",
+		"dojox/charting/plot2d/Bars",
+		"dojox/charting/plot2d/Columns",
+		"dojox/charting/action2d/Highlight",
+		"dojox/charting/action2d/Tooltip",
+		"dojox/charting/plot2d/Markers",
+		"dojox/charting/axis2d/Default",
+		"dojox/charting/widget/Legend",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+		"scripts/constants/Constants",
+	],
+	function (dom, domForm, domConstruct, topic, request,
+			  DeferredList, EnhancedGrid, GridPagination, ItemFileWriteStore,
+			  Chart, theme, Bars, Columns, Highlight, Tooltip, Markers, Default, Legend,
+			  JSUtil, PubSubTopics, Constants) {
+		
+		var startDate = domForm.fieldToObject("startDate");
+		var endDate = domForm.fieldToObject("endDate");
+		var responseType = domForm.fieldToObject("responseType");
+		var machineTypes = domForm.fieldToObject("machineTypes");
+		
+		var options = {
+			method: "GET",
+			handleAs: "json"
+		};
+		//var url = "hub/api/analytics/spotlight/ticketsupdatedkmm?" +
+		var url = "hub/api/analytics/hardware/ticketsupdatedkmm?" +
+				  "start=" + startDate +
+				  "&end=" + endDate +
+				  "&output=data" +
+				  "&response=" + responseType +
+				  "&machine_types=" + machineTypes;
+		reportDownloadURL = "hub/api/analytics/hardware/ticketsupdatedkmm/txt?" +
+				"start=" + startDate +
+				"&end=" + endDate +
+				"&response=" + responseType +
+				"&machine_types=" + machineTypes;
+
+		hideAllCalendars();
+		showProgressBar();
+		var deferred = request(url, options);
+		deferred.then(function(results) {
+			var gdata = {
+				identifier: 'id',
+				items: null
+			}
+			
+			var ticketsUpdated = [];
+			var reportDataExport = [];
+			var count = 0;
+			results.tickets.forEach(function(row) {
+				//console.log(row);
+				ticketsUpdated.push({
+					id: count,
+					ticket_id: row.ticket_id,
+					timestamp: row.timestamp,
+					tx_id: row.tx_id,
+					log_id: row.log_id,
+					component_id: row.component_id,
+					component_desc: row.component_desc,
+					machine_type: row.machine_type,
+					title: row.title,
+					description: row.problem_desc,
+					country: row.country,
+					pmr_type: row.pmr_type,
+					build: row.build,
+					answers: JSON.stringify(row.answers, null, "  ")
+				});
+				reportDataExport.push({
+					ticket_id: row.ticket_id,
+					timestamp: row.timestamp,
+					status: row.status,
+					close_date: row.close_date,
+					tx_id: row.tx_id,
+					log_id: row.log_id,
+					component_id: row.component_id,
+					component_desc: row.component_desc,
+					machine_type: row.machine_type,
+					owner_name: row.owner_name,
+					owner_id: row.owner_id,
+					resolver_name: row.resolver_name,
+					title: row.title,
+					description: row.problem_desc,
+					country: row.country,
+					pmr_type: row.pmr_type,
+					build: row.build,
+					answers: row.answers
+				});
+				count++;
+			});
+			gdata.items = ticketsUpdated;
+			
+			//topic.publish(PubSubTopics.ANALYTICS_SAVE_TICKETS_UPDATED_REPORT_DATA, reportDataExport);
+			
+			if (!refresh) {
+				var store = new ItemFileWriteStore({data: gdata});
+					
+				var layout = [[
+					{'name': 'Ticket ID', 'field': 'ticket_id', 'width': '8%', noresize: true},
+					{'name': 'Timestamp', 'field': 'timestamp', 'width': '12%', noresize: true},
+					{'name': 'Machine Type', 'field': 'machine_type', 'width': '10%', noresize: true},
+					{'name': 'Country', 'field': 'country', 'width': '6%', noresize: true},
+					{'name': 'Problem Description', 'field': 'description', 'width': '25%', noresize: true},
+					{'name': 'Answers', 'fields': ['build', 'answers'], 'width': '39%', noresize: true,
+						formatter: function(value){
+							var answersDisplay = "";
+							/*if (value[0]) {
+								answersDisplay += "build: " + value[0] + "<br />";
+							}*/
+							if (value[1]) {
+								var answers = JSON.parse(value[1]);
+								for (var i=0; i<answers.length; i++) {
+									var score = "";
+									if (answers[i].rank_score) {
+										score = answers[i].score;
+									}
+									var rankerScore = "";
+									if (answers[i].ranker_score) {
+										rankerScore = answers[i].ranker_score;
+									}
+									var rating = "";
+									if (answers[i].feedback && answers[i].feedback.contrib_ind) {
+										rating = answers[i].feedback.contrib_ind;
+									}
+									answersDisplay += "<div class='reportAnswerEntry'>";
+									answersDisplay += "id: " + answers[i].id + "<br />";
+									//answersDisplay += "url: " + answers[i].url + "<br />";
+									answersDisplay += "title: " + answers[i].title + "<br />";
+									//answersDisplay += "ir_engine: " + answers[i].ir_engine + "<br />";
+									if (rating !== "")  answersDisplay += "<b>rating: " + rating + "</b><br />";
+									answersDisplay += "score: " + answers[i].score + "<br />";
+									if (score !== "") answersDisplay += "score: " + score + "<br />";
+									if (rankerScore !== "") answersDisplay += "ranker_score: " + rankerScore + "<br />";
+									answersDisplay += "</div>";
+								}
+								return answersDisplay;
+							}
+							else return "";
+						}
+					}
+				]];
+					
+				var grid = new dojox.grid.EnhancedGrid({
+					id: 'gridReport',
+					store: store,
+					structure: layout,
+					rowSelector: '20px',
+					autoHeight: true,
+					selectable: true,
+					sortInfo: -2,
+					plugins: {
+						pagination: {
+							defaultPageSize: 20,
+							pageSizes: ["20", "50", "100", "500", "1000"],
+							description: true,
+							sizeSwitch: true,
+							pageStepper: true,
+							gotoButton: true,
+							/*page step to be displayed*/
+							maxPageStep: 5,
+							/*position of the pagination bar*/
+							position: "top"
+						}
+					}
+				}, document.createElement('div'));
+				
+				dom.byId("gridReportDiv").appendChild(grid.domNode);
+					
+				grid.startup();
+				hideProgressBar();
+			} else {
+				var newStore = new ItemFileWriteStore({data: gdata});
+				var grid = dijit.byId("gridReport");
+				grid.setStore(newStore);
+				hideProgressBar();
+			}
+
+				
+		}, function(err){
+			hideProgressBar();
+			console.log("ticketsUpdatedKMM: renderReport() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function downloadReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"scripts/utils/JSUtil"
+	],
+	function(dom, domConstruct, JSUtil) {
+		//var csvData = JSUtil.JSONToCSVConvertor(reportDataExport, true);
+		//console.log(csvData);
+		
+		var divDownloadReportLink = dom.byId("downloadReportLink");
+		domConstruct.empty(divDownloadReportLink);
+		//var blob = new Blob([JSON.stringify(reportDataExport, null, "    ")], { type: 'text/csv;charset=utf-8;' });
+		//var url = URL.createObjectURL(blob);
+		domConstruct.create("a", { id: "downloadLink", href: reportDownloadURL, download: "export.txt", innerHTML: "link", style: "visibility:hidden" }, divDownloadReportLink);
+		var downloadLink = dom.byId("downloadLink");
+		downloadLink.click();
+	});
+}
+
+
+/*require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.ANALYTICS_SAVE_TICKETS_UPDATED_REPORT_DATA, function(dataExport) {
+		reportDataExport = {export: dataExport};
+	});
+});*/
+
+function showProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var btnRefresh = dom.byId("btnRefresh");
+		var gridDiv = dom.byId("gridReportDiv");
+		domClass.remove(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "0.5");
+		btnRefresh.removeAttribute("onclick");
+		domClass.remove(btnRefresh, "logBtnRefresh");
+		domClass.add(btnRefresh, "logBtnRefreshDisabled");
+	});
+}
+
+function hideProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridReportDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.add(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "1.0");
+		btnRefresh.setAttribute("onclick", "renderReport(true)");
+		domClass.remove(btnRefresh, "logBtnRefreshDisabled");
+		domClass.add(btnRefresh, "logBtnRefresh");
+	});
+}
+
+function showCalendar(calendar) {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarDiv = dom.byId(calendar);
+		domClass.remove(calendarDiv, "hidden");
+		domClass.add(calendarDiv, "datePickerContainer");
+	});
+}
+
+function hideCalendar(calendar) {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarDiv = dom.byId(calendar);
+		domClass.remove(calendarDiv, "datePickerContainer");
+		domClass.add(calendarDiv, "hidden");
+	});
+}
+
+function hideAllCalendars() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarStartDateDiv = dom.byId("startDateCalendar");
+		domClass.remove(calendarStartDateDiv, "datePickerContainer");
+		domClass.add(calendarStartDateDiv, "hidden");
+		
+		var calendarEndDateDiv = dom.byId("endDateCalendar");
+		domClass.remove(calendarEndDateDiv, "datePickerContainer");
+		domClass.add(calendarEndDateDiv, "hidden");
+	});
+}
+</script>
+		
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div id="tabSelectReportAttachPoint" class="tab" onclick="showReportList();"><div id="tabSelectReportTextAttachPoint" class="tabText">Select Report</div></div>
+			<div id="tabDividerAttachPoint" class="tabDivider"></div>
+			<div id="tabReportAttachPoint" class="tabOn"><div id="tabReportNameAttachPoint" class="tabTextStatic">Hardware Tickets Updated KMM</div></div>
+		</div>
+		<div id="viewReportListAttachPoint" class="contentArea">
+			<div id="reportFiltersAttachPoint" class="filters">
+				<form id="filtersForm" onkeydown="if (event.keyCode == 13) { renderReport(true); return false; }">
+				<!--<div class="logFiltersText">Last </div>
+				<input id="limit" name="limit" class="filtersNumberField" type="text" value="100"/>
+				<div class="logFiltersText">-OR-</div>
+				<div class="logFiltersSpacer"></div>-->
+				<div class="logFiltersText">Start Date</div>
+				<div class="dateFieldContainer">
+					<input id="startDate" name="startDate" class="formDateField" type="text" onclick="showCalendar('startDateCalendar');" onchange="hideCalendar('startDateCalendar');" />
+					<div id="startDateCalendar" class="hidden" data-dojo-type="dijit/Calendar" data-dojo-props="dayWidth:'abbr'">
+						<script type="dojo/method" data-dojo-event="onChange" data-dojo-args="value">
+							require(["dojo/dom"], function(dom){
+								var newDate = new Date(value);
+								var newDateStr = newDate.toISOString();
+								newDateStr = newDateStr.replace(newDateStr.substring(newDateStr.indexOf("T")), "T00:00:00.000Z");
+								dom.byId('startDate').value = newDateStr;
+								hideCalendar("startDateCalendar");
+							});
+						</script>
+					</div>
+				</div>
+				<div class="logFiltersText">End Date</div>
+				<div class="dateFieldContainer">
+					<input id="endDate" name="endDate" class="formDateField" type="text" onfocus="showCalendar('endDateCalendar');" onchange="hideCalendar('endDateCalendar');"/>
+					<div id="endDateCalendar" class="hidden" data-dojo-type="dijit/Calendar" data-dojo-props="dayWidth:'abbr'">
+						<script type="dojo/method" data-dojo-event="onChange" data-dojo-args="value">
+							require(["dojo/dom"], function(dom){
+								var newDate = new Date(value);
+								var newDateStr = newDate.toISOString();
+								newDateStr = newDateStr.replace(newDateStr.substring(newDateStr.indexOf("T")), "T00:00:00.000Z");
+								dom.byId('endDate').value = newDateStr;
+								hideCalendar("endDateCalendar");
+							});
+						</script>
+					</div>
+				</div>
+				<button id="btnRefresh" class="logBtnRefresh" type="button" onclick="renderReport(true);"></button>
+				<!--<div id="progressBar" dojoType="dijit.ProgressBar" indeterminate="true" class="logProgressBar hidden"></div>-->
+				<div id="refreshProgress" class="progressIndicator hidden"></div>
+				<!--<div class="filtersText">Show</div>
+				<select id="showBatches" name="showBatches" class="filtersSelectField" onchange="refreshReportData();">
+					<option value="all">All</option>
+					<option value="inprogress" selected>In Progress</option>
+					<option value="completed">Completed</option>
+				</select>-->
+				<button class="btnDownload" type="button" onclick="downloadReport();"></button>
+				</form>
+			</div>
+			<div class="filters">
+				<div class="filtersText">KMM Response</div>
+				<select id="responseType" name="responseType" class="logFiltersSelectField">
+					<option value="all">All</option>
+					<option value="R">Resolved (R)</option>
+					<option value="Y">Contributed (Y)</option>
+					<option value="N">Not Related (N)</option>
+					<option value="X">Not Evaluated (X)</option>
+					<option value="U">Unknown (U)</option>
+					<option value="none">None</option>
+				</select>
+				<div class="filtersText">Machine Types</div>
+				<input id="machineTypes" name="machineTypes" class="formTextField" type="text" value=""/>
+			</div>
+			<div class="gridArea">
+				<div id="gridReportDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadReportLink"></div>
+		</div>
+	</div>
+</div>

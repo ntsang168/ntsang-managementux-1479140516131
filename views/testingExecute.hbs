@@ -1,0 +1,434 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+var mode = "{{mode}}";
+var user = "{{userid}}";
+var currentModule = "";
+var modules = {};
+
+require([
+	"dojo/parser",
+	"dojo/dom-class",
+	"dojo/on",
+	"dijit/ProgressBar",
+	"dojo/domReady!"
+],
+function(parser, domClass, on, ProgressBar) {
+	getTestCases();
+	
+	parser.parse();
+});
+
+function showTesting() {
+	window.location = "testing";
+}
+
+function getTestCases() {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class", 
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request"
+	],
+	function(lang, dom, domForm, domClass, domConstruct, topic, request) {
+		var url = "hub/api/testing/testcases";
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+		
+		var deferred = request(url, options);
+		deferred.then(function(data){
+			var selectSeverUrl = dom.byId("serverUrl");
+			data.server_url.forEach(function(url) {
+				var option = document.createElement("option");
+				option.text = url;
+				option.value = url;
+				selectSeverUrl.appendChild(option);
+			});
+			
+			var testCases = data.test_cases;
+			var selectModule = dom.byId("module");
+			for (var i=0; i<testCases.length; i++) {
+				if (i == 0) currentModule = testCases[i].module;
+				modules[testCases[i].module] = {
+					tests: testCases[i].tests,
+					port: testCases[i].port,
+					url: testCases[i].url
+				};
+				var option = document.createElement("option");
+				option.text = testCases[i].module;
+				option.value = testCases[i].module;
+				selectModule.appendChild(option);
+			}
+			
+			var divTestCases = dom.byId("testCases");
+			var testCasesContent = "";
+			
+			testCasesContent += "<div class='testCasesContent'>";
+			testCasesContent += "<table>";
+			/*
+			testCasesContent += "<tr>";
+			testCasesContent += "<td width='5%'><input id='selectAll' type='checkbox' value='' onchange='selectAll();'/><label for='selectAll'><span></span></label></td>";
+			testCasesContent += "<td width='95%' colspan='2'>Execute</td>";
+			testCasesContent += "</tr>";
+			testCasesContent += "<tr><td colspan='3'><div class='testCasesDivider'></div></td></tr>";
+			*/
+			for (var i=0; i<modules[currentModule].tests.length; i++) {
+				//console.log("test case", modules[defaultModule][i]);
+				testCasesContent += "<tr>";
+				testCasesContent += "<td width='5%'><input id='" + modules[currentModule].tests[i].id + "' type='checkbox' value='' /><label for='cb" + modules[currentModule].tests[i].id + "'><span></span></label></td>";
+				testCasesContent += "<td width='5%'>" + modules[currentModule].tests[i].id + "</td>";
+				testCasesContent += "<td width='90%'>" + modules[currentModule].tests[i].description + "</td>";
+				testCasesContent += "</tr>";
+				if (modules[currentModule].tests[i].parameters) {
+					var parameters = modules[currentModule].tests[i].parameters;
+					for (name in parameters) {
+						testCasesContent += "<tr>";
+						testCasesContent += "<td width='5%'></td>";
+						testCasesContent += "<td width='5%'></td>";
+						testCasesContent += "<td width='90%'>&nbsp;&nbsp;&nbsp;&nbsp;" + name;
+						if (parameters[name].required) {
+							testCasesContent += "<span class='testCaseParamRequired'>*</span>";
+						}
+						if (parameters[name].values) {
+							testCasesContent += "<select id='" + modules[currentModule].tests[i].id + "_" + name + "' name='" + modules[currentModule].tests[i].id + "_" + name + "' class='testCaseParamSelect' style='width: 200px;'>";
+							testCasesContent += "<option value=''></option>";
+							parameters[name].values.forEach(function(value) {
+								testCasesContent += "<option value='" + value + "'>" + value + "</option>";
+							});
+							testCasesContent += "</select>";
+						} else {
+							testCasesContent += "<input id='" + modules[currentModule].tests[i].id + "_" + name + "' name='" + modules[currentModule].tests[i].id + "_" + name + "'class='testCaseParam' type='text' value=''/>";
+						}
+						testCasesContent += "<span id='" + modules[currentModule].tests[i].id + "_" + name + "_error" + "' class='testCaseParamRequired hidden'>Required parameter</span>";
+						testCasesContent += "</td>";
+						testCasesContent += "</tr>";
+					}
+				}
+			}
+			testCasesContent += "<tr height='20px'><td colspan='3'></td></tr>";
+			testCasesContent += "<tr>";
+			testCasesContent += "<td colspan='3'><span class='testCaseParamRequired'>*</span> Required parameter for test case</td>";
+			testCasesContent += "</tr>";
+			testCasesContent += "</table>";
+			testCasesContent += "</div>";
+			
+			//console.log(testCasesContent);
+			divTestCases.innerHTML = testCasesContent;
+		}, function(error){
+			console.log("testingExecute: getTestCases() - An unexpected error occurred: " + error);
+		});
+	});
+}
+
+function refreshTestCases() {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class", 
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request"
+	],
+	function(lang, dom, domForm, domClass, domConstruct, topic, request) {
+		currentModule = domForm.fieldToObject("module");
+		
+		var selectAll = dom.byId("selectAll");
+		selectAll.checked = false;
+		
+		var divTestCases = dom.byId("testCases");
+		divTestCases.innerHTML = "";
+		var testCasesContent = "";
+		
+		testCasesContent += "<div class='testCasesContent'>";
+		testCasesContent += "<table width='100%'>";
+		for (var i=0; i<modules[currentModule].tests.length; i++) {
+			//console.log("test case", modules[defaultModule][i]);
+			testCasesContent += "<tr>";
+			testCasesContent += "<td width='5%'><input id='" + modules[currentModule].tests[i].id + "' name='" + modules[currentModule].tests[i].id + "' type='checkbox' value='' /><label for='cb" + modules[currentModule].tests[i].id + "'><span></span></label></td>";
+			testCasesContent += "<td width='5%'>" + modules[currentModule].tests[i].id + "</td>";
+			testCasesContent += "<td width='90%'>" + modules[currentModule].tests[i].description + "</td>";
+			testCasesContent += "</tr>";
+			if (modules[currentModule].tests[i].parameters) {
+				var parameters = modules[currentModule].tests[i].parameters;
+				for (name in parameters) {
+					testCasesContent += "<tr>";
+					testCasesContent += "<td width='5%'></td>";
+					testCasesContent += "<td width='5%'></td>";
+					testCasesContent += "<td width='90%'>&nbsp;&nbsp;&nbsp;&nbsp;" + name;
+					if (parameters[name].required) {
+						testCasesContent += "<span class='testCaseParamRequired'>*</span>";
+					}
+					if (parameters[name].values) {
+						testCasesContent += "<select id='" + modules[currentModule].tests[i].id + "_" + name + "' name='" + modules[currentModule].tests[i].id + "_" + name + "' class='formSelectField' style='width: 200px;'>";
+						testCasesContent += "<option value=''></option>";
+						parameters[name].values.forEach(function(value) {
+							testCasesContent += "<option value='" + value + "'>" + value + "</option>";
+						});
+						testCasesContent += "</select>";
+					} else {
+						testCasesContent += "<input id='" + modules[currentModule].tests[i].id + "_" + name + "' name='" + modules[currentModule].tests[i].id + "_" + name + "'class='testCaseParam' type='text' value=''/>";
+					}
+					testCasesContent += "<span id='" + modules[currentModule].tests[i].id + "_" + name + "_error" + "' class='testCaseParamRequired hidden'>Required parameter</span>";
+					testCasesContent += "</td>";
+					testCasesContent += "</tr>";
+				}
+			}
+		}
+		testCasesContent += "<tr height='20px'><td colspan='3'></td></tr>";
+		testCasesContent += "<tr>";
+		testCasesContent += "<td colspan='3'><span class='testCaseParamRequired'>*</span> Required parameter for test case</td>";
+		testCasesContent += "</tr>";
+		testCasesContent += "</table>";
+		testCasesContent += "</div>";
+		
+		divTestCases.innerHTML = testCasesContent;
+	});
+}
+
+function selectAllTestCases() {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class", 
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request"
+	],
+	function(lang, dom, domForm, domClass, domConstruct, topic, request) {
+		var selectAll = dom.byId("selectAll");
+		//console.log("select all", currentModule, selectAll.checked);
+		
+		for (var i=0; i<modules[currentModule].tests.length; i++) {
+			var testCaseCB = dom.byId(modules[currentModule].tests[i].id);
+			if (selectAll.checked) {
+				testCaseCB.checked = true;
+			} else {
+				testCaseCB.checked = false;
+			}
+		}
+	});
+}
+
+function validateParameters() {
+	require([
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class"
+	],
+	function(dom, domForm, domClass) {
+		modules[currentModule].valid = true;
+		for (var i=0; i<modules[currentModule].tests.length; i++) {
+			var testCase = modules[currentModule].tests[i];
+			var testCaseCB = dom.byId(testCase.id);
+			
+			if (testCase.parameters) {
+				for (name in testCase.parameters) {
+					
+					var paramErrorText = dom.byId(testCase.id + "_" + name + "_error");
+					if (testCaseCB.checked) {
+						domClass.add(paramErrorText, "hidden");
+						if (testCase.parameters[name].required) {
+							var paramValue = domForm.fieldToObject(testCase.id + "_" + name);
+							console.log(paramValue);
+							if (paramValue == "") {
+								modules[currentModule].valid = false;
+								domClass.remove(paramErrorText, "hidden");
+							}
+						}
+					} else {
+						domClass.add(paramErrorText, "hidden");
+					}
+				}
+			}
+		}
+	});
+}
+
+function executeTestCases() {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class", 
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request"
+	],
+	function(lang, dom, domForm, domClass, domConstruct, topic, request) {
+		disableExecute();
+		validateParameters();
+		
+		if (modules[currentModule].valid) {
+			var testCases = [];
+			var testCasesParams = {};
+			for (var i=0; i<modules[currentModule].tests.length; i++) {
+				var testCase = modules[currentModule].tests[i];
+				var testCaseCB = dom.byId(testCase.id);
+				if (testCaseCB.checked) {
+					testCases.push(testCase.id);
+					if (testCase.parameters) {
+						for (name in testCase.parameters) {
+							var paramValue = domForm.fieldToObject(testCase.id + "_" + name);
+							if (!testCasesParams["parameters_" + testCase.id]) {
+								testCasesParams["parameters_" + testCase.id] = {};
+								testCasesParams["parameters_" + testCase.id][name] = paramValue;
+							} else {
+								testCasesParams["parameters_" + testCase.id][name] = paramValue;
+							}
+						}
+					}
+				}
+			}
+			
+			clearStatus();
+			var divStatusMsg = dom.byId("testStatusMsg");
+			var divStatusMsgText = dom.byId("testStatusMsgText");
+			if (testCases.length <= 0) {
+				domClass.remove(divStatusMsg, "hidden");
+				domClass.add(divStatusMsg, "testStatusMsgError");
+				divStatusMsgText.innerHTML = "No test cases were selected to execute";
+				//window.setTimeout(function() {clearStatus();}, 5000);
+				enableExecute();
+			} else {
+				var server = domForm.fieldToObject("serverUrl");
+				var url = "hub/api/testing/execute";
+				var options = {
+					method: "POST",
+					handleAs: "json",
+					data: {
+						server: server,
+						port: modules[currentModule].port,
+						url: modules[currentModule].url,
+						tests: testCases,
+						user: user,
+						parameters: JSON.stringify(testCasesParams)
+					}
+				}
+				console.log("Execute API call", url, options);
+				
+				var deferred = request(url, options);
+				deferred.then(function(result) {
+					domClass.remove(divStatusMsg, "hidden");
+					domClass.add(divStatusMsg, "testStatusMsgSuccess");
+					var statusText = "Executing test cases for module " + currentModule + ": ";
+					for (var i=0; i<testCases.length; i++) {
+						statusText += testCases[i];
+						if ((i+1) < testCases.length) {
+							statusText += ", ";
+						}
+					}
+					statusText += " - Test ID <a class='testStatusMsgUrl' href='testing?id=" + result.result.id + "'>" + result.result.id + "</div>";
+					divStatusMsgText.innerHTML = statusText;
+					//window.setTimeout(function() {clearStatus();}, 50000);
+					enableExecute();
+				}, function(error){
+					console.log("testingExecute: executeTestCases() - An unexpected error occurred: " + error);
+					domClass.remove(divStatusMsg, "hidden");
+					domClass.add(divStatusMsg, "testStatusMsgError");
+					divStatusMsgText.innerHTML = "ERROR - failed to execute test cases";
+					//window.setTimeout(function() {clearStatus();}, 50000);
+					enableExecute();
+				});
+			}
+		} else {
+			enableExecute();
+		}
+
+	});
+}
+
+function disableExecute() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var divBtnExecute = dom.byId("btnExecute");
+		var divExecuteProgress = dom.byId("executeProgress");
+		divBtnExecute.removeAttribute("onclick");
+		domClass.remove(divBtnExecute, "btnExecute");
+		domClass.add(divBtnExecute, "btnExecuteDisabled");
+		domClass.remove(divExecuteProgress, "hidden");
+	});
+}
+
+function enableExecute() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var divBtnExecute = dom.byId("btnExecute");
+		var divExecuteProgress = dom.byId("executeProgress");
+		divBtnExecute.setAttribute("onclick", "executeTestCases()");
+		domClass.remove(divBtnExecute, "btnExecuteDisabled");
+		domClass.add(divBtnExecute, "btnExecute");
+		domClass.add(divExecuteProgress, "hidden");
+	});
+}
+
+function clearStatus() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var divStatusMsg = dom.byId("testStatusMsg");
+		domClass.remove(divStatusMsg, "testStatusMsgSuccess");
+		domClass.remove(divStatusMsg, "testStatusMsgError");
+		domClass.add(divStatusMsg, "hidden");
+	});
+}
+</script>
+
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div class="tab"><div class="tabText" onclick="showTesting();">Results</div></div>
+			<div class="tabOn"><div class="tabTextOn">Execute</div></div>
+		</div>
+		<div class="testContentArea">
+			<div id="testStatusMsg" class="testStatusMsg hidden">
+				<table width="100%">
+					<tr>
+						<td width="90%"><div id="testStatusMsgText" class="testStatusMsgText"></div></td>
+						<td width="10%" align="right"><div class="testStatusMsgClose" onclick="clearStatus()">X</div></td>
+					</tr>
+				</table>
+			</div>
+			<form id="testCasesForm" onkeydown="if (event.keyCode == 13) { refreshReportData(); return false; }">
+			<div class="testParameterField">
+				<div class="testCasesHeading">Server URL: </div>
+				<select id="serverUrl" name="serverUrl" class="formSelectField" style="width: 300px;"></select>
+			</div>
+			<div class="testParameterField">
+				<div class="testCasesHeading">Module:</div>
+				<select id="module" name="module" class="formSelectField" style="width: 300px;" onchange="refreshTestCases();"></select>
+			</div>
+			
+			<div class="testCases">
+				<div class='testCasesContent'>
+				<table width="100%">
+					<tr>
+						<td width="5%"><input id="selectAll" name="selectAll" type="checkbox" value="selectAll" onclick="selectAllTestCases();"/><label for="selectAll"><span></span></label></td>
+						<td width="95%" colspan="2"><div id="btnExecute" class="btnExecute" onclick="executeTestCases();"></div><div id="executeProgress" class="progressIndicator hidden"></div></td>
+					</tr>
+				</table>
+				</div>
+				<div class="testCasesDivider"></div>
+				<div id="testCases"></div>
+			</div>
+			</form>
+			<div style="height: 50px;"></div>
+		</div>
+	</div>
+	
+</div>

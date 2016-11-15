@@ -1,0 +1,26 @@
+swg1PM12345
+swg1PM12345 
+PM12345
+PM12345 	
+isg1PM12345
+isg1PM12345 
+http://www-01.ibm.com/support/docview.wss?uid=isg1PM83967
+http://www-01.ibm.com/support/docview.wss?uid=isg1PM83967&crawler=1
+http://www-01.ibm.com/support/docview.wss?uid=isg1PM83967&crawler=1 
+www-01.ibm.com/support/docview.wss?uid=isg1PM83967
+APAR: PM12345
+APAR PM12345
+APAR# PM12345
+APAR #PM12345
+APAR:PM12345
+http://eclient.lenexa.ibm.com:9082/search?fetch=source/APAR/PI09905
+https://eclient.lenexa.ibm.com:9082/search?fetch=source/APAR/PI09905
+www-01.ibm.com/support/docview.wss?uid=swg1PM12345
+http://www-01.ibm.com/support/docview.wss?uid=swg1PM12345
+http://www.ibm.com/support/docview.wss?crawler=1&uid=swg1PM12345
+http://www.ibm.com/support/docview.wss?uid=swg1PM12345&crawler=1
+https://www-304.ibm.com/support/entdocview.wss?uid=swg1IV74479&myns=swgother&mynp=OCSSBQAC&mync=F&cm_sp=swgother-_-OCSSBQAC-_-F
+https://www-304.ibm.com/support/docview.wss?uid=nas24ade1a58b728d074862577ec0041fd29
+http://www-01.ibm.com/support/docview.wss?uid=nas24ade1a58b728d074862577ec0041fd29
+www-01.ibm.com/support/docview.wss?uid=nas24ade1a58b728d074862577ec0041fd29
+http://www-01.ibm.com/support/docview.wss?uid=nas24ade1a58b728d074862577ec0041fd29&crawler=1

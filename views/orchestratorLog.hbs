@@ -1,0 +1,599 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/parser",
+	"dojo/dom-class",
+	"dojo/on",
+	"dijit/ProgressBar",
+	"dojo/domReady!"
+],
+function(parser, domClass, on, ProgressBar) {
+	getLogData(false);
+	
+	parser.parse();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridLogging");
+		grid.resize();
+	});
+});
+
+function getLogData(refresh) {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class", 
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/utils/JSUtil",
+		"scripts/constants/Constants",
+		"scripts/constants/PubSubTopics",
+		"dojo/domReady!"
+	],
+	function(lang, dom, domForm, domClass, domConstruct, topic, request, EnhancedGrid,
+			 GridPagination, ItemFileWriteStore, JSUtil, Constants, PubSubTopics) {
+			var limit = domForm.fieldToObject("logLimit");
+			var start = domForm.fieldToObject("logStartDate");
+			var end = domForm.fieldToObject("logEndDate");
+			var severity = domForm.fieldToObject("logSeverity");
+			var severityMap = {};
+			if (domForm.fieldToObject("severityError") && domForm.fieldToObject("severityError") != "") {
+				severityMap["error"] = 1;
+			}
+			if (domForm.fieldToObject("severityWarn") && domForm.fieldToObject("severityWarn") != "") {
+				severityMap["warn"] = 1;
+			}
+			if (domForm.fieldToObject("severityInfo") && domForm.fieldToObject("severityInfo") != "") {
+				severityMap["info"] = 1;
+			}
+			if (domForm.fieldToObject("severityDebug") && domForm.fieldToObject("severityDebug") != "") {
+				severityMap["debug"] = 1;
+			}
+			if (domForm.fieldToObject("severityFine") && domForm.fieldToObject("severityFine") != "") {
+				severityMap["fine"] = 1;
+			}
+			var searchText = domForm.fieldToObject("logSearchText");
+			var queryId = domForm.fieldToObject("queryIdText");
+			
+			var url = "hub/api/orchestratorLog";
+			var options = {
+				method: "POST",
+				handleAs: "json",
+				data: {
+					limit: limit,
+					start: start,
+					end: end
+				}
+			}
+			
+			hideAllCalendars()
+			showProgressBar();
+			var deferred = request(url, options);
+			deferred.then(function(data){
+				var logData = [];
+				
+				if (refresh) {
+					
+					var gdata = {
+						identifier: 'id',
+						items: []
+					}
+					
+					if (searchText) {
+					
+						var url = "hub/api/orchestratorLogs/search";
+						var options = {
+							method: "POST",
+							handleAs: "json",
+							data: {
+								limit: limit,
+								searchText: searchText,
+								start: start,
+								end: end
+							}
+						}
+						
+						var deferred = request(url, options);
+						deferred.then(function(searchResult) {
+							var searchResults = {};
+							searchResult.result.forEach(function(row) {
+								if (!searchResults[row.id]) searchResults[row.id] = true;
+							});
+							
+							var count = 1;
+							data.rows.forEach(function(row) {
+								if (searchResults[row.id]) {
+								
+									var timestamp = row.value.timestamp;
+									var hostname = "";
+									if (row.value.hostname) {
+										hostname = row.value.hostname;
+									}
+									
+									var query_Id = row.value.queryId;
+									var additionalInfo = null;
+									if (row.value.additionalInformation) {
+										if (typeof row.value.additionalInformation == "string") {
+											additionalInfo = row.value.additionalInformation
+										} else if (typeof row.value.additionalInformation == "object") {
+											additionalInfo = JSON.stringify(row.value.additionalInformation, null, "  ");
+										}
+										//console.log(row.id, row.value.additionalInformation, additionalInfo);
+									}
+									if (severityMap[row.value.severity.toLowerCase()]) {
+										gdata.items.push(dojo.mixin({id: count},
+																	{timestamp: timestamp},
+																	{messageId: row.value.messageId},
+																	{severity: row.value.severity},
+																	{hostname: hostname},
+																	{query_Id: row.value.queryId},
+																	{message: row.value.message},
+																	{additionalInfo: additionalInfo}
+																	));
+										count++;
+									}
+									
+								}
+							});
+							
+							//console.log(count, gdata.items.length);
+							var newStore = new ItemFileWriteStore({data: gdata});
+							var grid = dijit.byId("gridLogging");
+							grid.setStore(newStore);
+							hideProgressBar();
+						}, function(error){
+							console.log("logging: getLogData() - An unexpected error occurred: " + error);
+							hideProgressBar();
+						});
+					} else if(queryId){
+						var url = "hub/api/orchestratorLogs/searchByQueryId";
+						var options = {
+							method: "POST",
+							handleAs: "json",
+							data: {
+								limit: limit,
+								queryId: queryId,
+								start: start,
+								end: end
+							}
+						}
+						
+						var deferred = request(url, options);
+						deferred.then(function(searchResult) {
+							var searchResults = {};
+							searchResult.result.forEach(function(row) {
+								if (!searchResults[row.id]) searchResults[row.id] = true;
+							});
+							
+							var count = 1;
+							data.rows.forEach(function(row) {
+								if (searchResults[row.id]) {
+								
+									var timestamp = row.value.timestamp;
+									var hostname = "";
+									if (row.value.hostname) {
+										hostname = row.value.hostname;
+									}
+									
+									var query_Id = row.value.queryId;
+									var additionalInfo = null;
+									if (row.value.additionalInformation) {
+										if (typeof row.value.additionalInformation == "string") {
+											additionalInfo = row.value.additionalInformation
+										} else if (typeof row.value.additionalInformation == "object") {
+											additionalInfo = JSON.stringify(row.value.additionalInformation, null, "  ");
+										}
+										//console.log(row.id, row.value.additionalInformation, additionalInfo);
+									}
+									if (severityMap[row.value.severity.toLowerCase()]) {
+										gdata.items.push(dojo.mixin({id: count},
+																	{timestamp: timestamp},
+																	{messageId: row.value.messageId},
+																	{severity: row.value.severity},
+																	{hostname: hostname},
+																	{query_Id: row.value.queryId},
+																	{message: row.value.message},
+																	{additionalInfo: additionalInfo}
+																	));
+										count++;
+									}
+									
+								}
+							});
+							
+							//console.log(count, gdata.items.length);
+							var newStore = new ItemFileWriteStore({data: gdata});
+							var grid = dijit.byId("gridLogging");
+							grid.setStore(newStore);
+							hideProgressBar();
+						}, function(error){
+							console.log("logging: getLogData() - An unexpected error occurred: " + error);
+							hideProgressBar();
+						});
+
+					} else {
+						var count = 1;
+						data.rows.forEach(function(row) {
+							var timestamp = row.value.timestamp;
+							var hostname = "";
+							if (row.value.hostname) {
+								hostname = row.value.hostname;
+							}
+							
+							var query_Id = row.value.queryId;
+							var additionalInfo = null;
+							if (row.value.additionalInformation) {
+								if (typeof row.value.additionalInformation == "string") {
+									additionalInfo = row.value.additionalInformation
+								} else if (typeof row.value.additionalInformation == "object") {
+									additionalInfo = JSON.stringify(row.value.additionalInformation, null, "  ");
+								}
+								
+							}
+							if (severityMap[row.value.severity.toLowerCase()]) {
+								gdata.items.push(dojo.mixin({id: count},
+															{timestamp: timestamp},
+															{messageId: row.value.messageId},
+															{severity: row.value.severity},
+															{hostname: hostname},
+															{query_Id: row.value.queryId},
+															{message: row.value.message},
+															{additionalInfo: additionalInfo}
+															));
+								count++;
+							}
+							
+						});
+						
+						var newStore = new ItemFileWriteStore({data: gdata});
+						var grid = dijit.byId("gridLogging");
+						grid.setStore(newStore);
+						
+						hideProgressBar();
+					}
+				} else {
+					var gdata = {
+						identifier: 'id',
+						items: []
+					}
+					
+					var count = 1;
+					data.rows.forEach(function(row) {
+						var timestamp = row.value.timestamp;
+						var hostname = "";
+						if (row.value.hostname) {
+							hostname = row.value.hostname;
+						}
+						
+						var query_Id = row.value.queryId;
+						var additionalInfo = null;
+						if (row.value.additionalInformation) {
+							if (typeof row.value.additionalInformation == "string") {
+								additionalInfo = row.value.additionalInformation
+							} else if (typeof row.value.additionalInformation == "object") {
+								additionalInfo = JSON.stringify(row.value.additionalInformation, null, "  ");
+							}
+						}
+						if (severityMap[row.value.severity.toLowerCase()]) {
+							gdata.items.push(dojo.mixin({id: count},
+														{timestamp: timestamp},
+														{messageId: row.value.messageId},
+														{severity: row.value.severity},
+														{hostname: hostname},
+														{query_Id: query_Id},
+														{message: row.value.message},
+														{additionalInfo: additionalInfo}
+														));
+							count++;
+						}
+					});
+					
+					var store = new ItemFileWriteStore({data: gdata});
+					
+					var layout = [[
+						{'name': 'Timestamp (UTC)', 'field': 'timestamp', 'width': '15%', noresize: true},
+						{'name': 'Severity', 'field': 'severity', 'width': '6%', noresize: true},
+						{'name': 'Hostname', 'field': 'hostname', 'width': '8%', noresize: true},
+						{'name': 'Query ID', 'field': 'query_Id', 'width': '10%', noresize: true},
+						{'name': 'Message ID', 'field': 'messageId', 'width': '14%', noresize: true},
+						{'name': 'Message', 'field': 'message', 'width': '22%', noresize: true},
+						{'name': 'Additional Info', 'field': 'additionalInfo', 'width': '25%', noresize: true,
+							formatter: function(info){
+								if (info) return info;
+								else return "";
+							}
+						}
+					]];
+					
+					var gridLogging = new dojox.grid.EnhancedGrid({
+						id: 'gridLogging',
+						store: store,
+						structure: layout,
+						rowSelector: '20px',
+						autoHeight: true,
+						selectable: true,
+						sortInfo: -1,
+						plugins: {
+							pagination: {
+								defaultPageSize: 20,
+								pageSizes: ["20", "50", "100", "500", "1000"],
+								description: true,
+								sizeSwitch: true,
+								pageStepper: true,
+								gotoButton: true,
+								/*page step to be displayed*/
+								maxPageStep: 5,
+								/*position of the pagination bar*/
+								position: "top"
+							}
+						}
+					}, document.createElement('div'));//paginatorBar
+						
+					dom.byId("gridLoggingDiv").appendChild(gridLogging.domNode);
+					
+					
+					
+					gridLogging.startup();
+					
+					
+					hideProgressBar();
+				}
+			}, function(error){
+				console.log("logging: getLogData() - An unexpected error occurred: " + error);
+				hideProgressBar();
+			});
+	});
+}
+
+function downloadLogData() {
+	require([
+		"dojo/dom-form",
+		"dojo/request",
+		"dojo/topic",
+		"scripts/constants/PubSubTopics"
+	],
+	function(domForm, request, topic, PubSubTopics) {
+			var limit = domForm.fieldToObject("logLimit");
+			var start = domForm.fieldToObject("logStartDate");
+			var end = domForm.fieldToObject("logEndDate");
+			var searchText = domForm.fieldToObject("logSearchText");
+			
+			var url = "hub/api/orcLogs/csv";
+			var options = {
+				method: "POST",
+				handleAs: "text",
+				data: {
+					limit: limit,
+					searchText: searchText,
+					start: start,
+					end: end
+				},
+			}
+			
+			var deferred = request(url, options);
+				
+			deferred.then(function(data){
+				//console.log(data);
+				topic.publish(PubSubTopics.LOGGING_FIRE_DOWNLOAD_LINK, data);
+			}, function(error){
+				console.log("logging: downloadLogData() - An unexpected error occurred: " + error);
+			});
+	});
+}
+
+function showProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridLoggingDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.remove(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "0.5");
+		btnRefresh.removeAttribute("onclick");
+		domClass.remove(btnRefresh, "logBtnRefresh");
+		domClass.add(btnRefresh, "logBtnRefreshDisabled");
+	});
+}
+
+function hideProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridLoggingDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.add(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "1.0");
+		btnRefresh.setAttribute("onclick", "getLogData(true)");
+		domClass.remove(btnRefresh, "logBtnRefreshDisabled");
+		domClass.add(btnRefresh, "logBtnRefresh");
+	});
+}
+
+require([
+	"dojo/dom",
+	"dojo/dom-construct",
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(dom, domConstruct, topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.LOGGING_FIRE_DOWNLOAD_LINK, function(data) {
+		var divDownloadLogs = dom.byId("downloadLogs");
+		domConstruct.empty(divDownloadLogs);
+		var blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
+		var url = URL.createObjectURL(blob);     
+		domConstruct.create("a", { id: "downloadLogsLink", href: url, download: "OrcLog.csv", innerHTML: "link", style: "visibility:hidden" }, divDownloadLogs);
+		var downloadLink = dom.byId("downloadLogsLink");
+		downloadLink.click();
+	});
+});
+
+require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.LOGGING_SAVE_LOG_DATA, function(data) {
+		dataExport = data;
+	});
+});
+
+function showView(view) {
+	window.location = view;
+}
+
+function showCalendar(calendar) {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarDiv = dom.byId(calendar);
+		domClass.remove(calendarDiv, "hidden");
+		domClass.add(calendarDiv, "datePickerContainer");
+	});
+}
+
+function hideCalendar(calendar) {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarDiv = dom.byId(calendar);
+		domClass.remove(calendarDiv, "datePickerContainer");
+		domClass.add(calendarDiv, "hidden");
+	});
+}
+
+function hideAllCalendars() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarStartDateDiv = dom.byId("startDateCalendar");
+		domClass.remove(calendarStartDateDiv, "datePickerContainer");
+		domClass.add(calendarStartDateDiv, "hidden");
+		
+		var calendarEndDateDiv = dom.byId("endDateCalendar");
+		domClass.remove(calendarEndDateDiv, "datePickerContainer");
+		domClass.add(calendarEndDateDiv, "hidden");
+	});
+}
+</script>
+
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div class="tab" onclick="showView('logging');"><div class="tabText">DQS Module Logs</div></div>
+			<div class="tab" onclick="showView('loggingByTicket');"><div class="tabText">DQS Logs By Ticket</div></div>
+			<div class="tabOn"><div class="tabTextOn">Orchestrator Logs</div></div>
+		</div>
+		<div class="contentAreaLogging">
+			<form id="logFiltersForm" onkeydown="if (event.keyCode == 13) { getLogData(true); return false; }">
+			<div class="logFilters">
+				<div class="logFiltersText">Last</div>
+				<input id="logLimit" name="logLimit" class="logFiltersNumberField" type="text" value="500"/>
+				<div class="logFiltersText">-OR-</div>
+				<div class="logFiltersSpacer"></div>
+				<div class="logFiltersText">Start Date</div>
+				<div class="dateFieldContainer">
+					<input id="logStartDate" name="logStartDate" class="formDateField" type="text" onclick="showCalendar('startDateCalendar');" onchange="hideCalendar('startDateCalendar');" />
+					<div id="startDateCalendar" class="hidden" data-dojo-type="dijit/Calendar" data-dojo-props="dayWidth:'abbr'">
+						<script type="dojo/method" data-dojo-event="onChange" data-dojo-args="value">
+							require(["dojo/dom"], function(dom){
+								var newDate = new Date(value);
+								var newDateStr = newDate.toISOString();
+								newDateStr = newDateStr.replace(newDateStr.substring(newDateStr.indexOf("T")), "T00:00:00.000Z");
+								dom.byId('logStartDate').value = newDateStr;
+								hideCalendar("startDateCalendar");
+							});
+						</script>
+					</div>
+				</div>
+				<div class="logFiltersText">End Date</div>
+				<div class="dateFieldContainer">
+					<input id="logEndDate" name="logEndDate" class="formDateField" type="text" onfocus="showCalendar('endDateCalendar');" onchange="hideCalendar('endDateCalendar');"/>
+					<div id="endDateCalendar" class="hidden" data-dojo-type="dijit/Calendar" data-dojo-props="dayWidth:'abbr'">
+						<script type="dojo/method" data-dojo-event="onChange" data-dojo-args="value">
+							require(["dojo/dom"], function(dom){
+								var newDate = new Date(value);
+								var newDateStr = newDate.toISOString();
+								newDateStr = newDateStr.replace(newDateStr.substring(newDateStr.indexOf("T")), "T00:00:00.000Z");
+								dom.byId('logEndDate').value = newDateStr;
+								hideCalendar("endDateCalendar");
+							});
+						</script>
+					</div>
+				</div>
+				<button id="btnRefresh" class="logBtnRefresh" type="button" onclick="getLogData(true);"></button>
+				<!--<div id="logProgressBar" dojoType="dijit.ProgressBar" indeterminate="true" class="logProgressBar hidden"></div>-->
+				<div id="refreshProgress" class="progressIndicator hidden"></div>
+				<button class="logBtnDownload" type="button" onclick="downloadLogData();"></button>
+			</div>
+			<div class="logFilters">
+				<div class="logFiltersText">Severity</div>
+				<div class="logFiltersSeverityCheckboxes">
+					<table border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td><input id="severityError" name="severityError" type="checkbox" value="show" checked="true"/><label for="severityError"><span></span></label></td>
+							<td><div class="logFiltersTextSeverity">Error</div></td>
+							<td><input id="severityWarn" name="severityWarn" type="checkbox" value="show" checked="true"/><label for="severityWarn"><span></span></label></td>
+							<td><div class="logFiltersTextSeverity">Warn</div></td>
+							<td><input id="severityInfo" name="severityInfo" type="checkbox" value="show" checked="true"/><label for="severityInfo"><span></span></label></td>
+							<td><div class="logFiltersTextSeverity">Info</div></td>
+							<td><input id="severityDebug" name="severityDebug" type="checkbox" value="show" /><label for="severityDebug"><span></span></label></td>
+							<td><div class="logFiltersTextSeverity">Debug</div></td>
+							<td><input id="severityFine" name="severityFine" type="checkbox" value="show" /><label for="severityFine"><span></span></label></td>
+							<td><div class="logFiltersTextSeverity">Fine</div></td>
+						</tr>
+					</table>
+				</div>
+				<div class="logFiltersText">Query Id</div>
+				<input id="queryIdText" name="queryIdText" class="logFiltersTextField" type="text" value=""/>
+				<div class="logFiltersText">-OR-</div>
+				<div class="logFiltersSpacer"></div>
+				<div class="logFiltersText">Text</div>
+				<input id="logSearchText" name="logSearchText" class="logFiltersTextField" type="text" value=""/>
+			</div>
+			</form>
+			<div class="logArea">
+				<div id="gridLoggingDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadLogs"></div>
+		</div>
+	</div>
+	
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/btnRefreshOn.png",
+				"images/btnDownloadOn.png"
+			)
+		</script>
+	</div>
+	-->
+</div>

@@ -1,0 +1,379 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/domReady!"
+],
+function(domClass) {
+    setEditorHeight();
+    var historyDocId = "{{historydocid}}";
+	loadModuleDocuments(historyDocId);
+    if (historyDocId) showHistoryDocument(historyDocId);
+});
+
+function setEditorHeight() {
+    require([
+        "dojo/dom",
+        "dojo/dom-style"
+    ], function(dom, domStyle) {
+        var windowHeight = window.innerHeight - 165;
+        console.log(windowHeight);
+        if (editor) {
+            var divEditor = dom.byId("editor");
+            domStyle.set(divEditor, "height", windowHeight + "px");
+            editor.resize();
+        }
+    });
+}
+
+function showView(view, docSelected) {
+    require([
+        "dojo/dom",
+        "dojo/dom-form"
+    ],
+    function(dom, domForm) {
+        var viewWithParams = view;
+        if (docSelected) {
+            viewWithParams += "?docid=" + domForm.fieldToObject("selectDoc");
+        }
+        window.location = viewWithParams;
+    });
+}
+
+function loadModuleDocuments(historyDocId) {
+	require([
+		"dojo/dom",
+		"dojo/request",
+	],
+	function(dom, request) {
+        var docId = "";
+        if (historyDocId) docId = historyDocId.substring(historyDocId.indexOf("-")+1);
+        console.log(historyDocId, docId);
+		var url = "hub/api/config/list";
+		var options = {
+			method: "GET",
+			handleAs: "json"
+		};
+			
+		var deferred = request(url, options);
+		deferred.then(function(data){
+			//console.log(data.moduleIds);
+			var select = dom.byId("selectDoc");
+			data.moduleIds.forEach(function(id) {
+				//console.log(id);
+				var option = document.createElement("option");
+				option.text = id;
+				option.value = id;
+                if (docId && docId === id) option.selected = true;
+				select.appendChild(option);
+			});
+		}, function(error){
+			console.log("configure.hbs: loadModuleDocuments() - An unexpected error occurred: " + error);
+		});
+	});
+}
+
+function showDocument() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-form",
+		"dojo/dom-style",
+		"dojo/request"
+	],
+	function(dom, domClass, domForm, domStyle, request) {
+		var docId = domForm.fieldToObject("selectDoc");
+		if (docId) {
+			//console.log(docId);
+			var saveBtn = dom.byId("configBtnSave");
+			domClass.remove(saveBtn, "hidden");
+            var historyBtn = dom.byId("configBtnHistory");
+            domClass.remove(historyBtn, "hidden");
+			var divStatusText = dom.byId("statusText");
+			domClass.add(divStatusText, "hidden");
+            var divComments = dom.byId("commentsContainer");
+            domClass.remove(divComments, "hidden");
+			
+			var url = "hub/api/config/doc/" + docId;
+			var options = {
+				method: "GET",
+				handleAs: "json"
+			};
+				
+			var deferred = request(url, options);
+			deferred.then(function(data){
+				if (editor) {
+					//editor.setValue(data);
+					editor.setValue(JSON.stringify(data, null, '\t'));
+					//var divEditor = dom.byId("editor");
+					//console.log(editor.getSession().getScreenLength(), editor.renderer.lineHeight);
+					//var newHeight = (editor.getSession().getScreenLength() * editor.renderer.lineHeight) + editor.renderer.lineHeight;
+					//domStyle.set(divEditor, "height", newHeight + "px");
+					//editor.resize();
+				}
+			}, function(error){
+				console.log("configure.hbs: showDocument() - An unexpected error occurred: " + error);
+			});
+		} else {
+			var saveBtn = dom.byId("configBtnSave");
+			domClass.add(saveBtn, "hidden");
+			var divStatusText = dom.byId("statusText");
+			domClass.add(divStatusText, "hidden");
+			if (editor) {
+				editor.setValue("");
+				//var divEditor = dom.byId("editor");
+				//domStyle.set(divEditor, "height", "400px");
+				//editor.resize();
+			}
+		}
+	});
+}
+
+function showHistoryDocument(historyDocId) {
+    require([
+        "dojo/dom",
+        "dojo/dom-class",
+        "dojo/dom-form",
+        "dojo/dom-style",
+        "dojo/request"
+    ],
+    function(dom, domClass, domForm, domStyle, request) {
+        var saveBtn = dom.byId("configBtnSave");
+        domClass.remove(saveBtn, "hidden");
+        var historyBtn = dom.byId("configBtnHistory");
+        domClass.remove(historyBtn, "hidden");
+        var divStatusText = dom.byId("statusText");
+        domClass.remove(divStatusText, "hidden");
+        domClass.add(divStatusText, "warningText");
+        divStatusText.innerHTML = "Reverted to version " + historyDocId.substring(0, historyDocId.indexOf("-")) + " content";
+        var divComments = dom.byId("commentsContainer");
+        domClass.remove(divComments, "hidden");
+
+        var doc = {};
+        var docId = historyDocId.substring(historyDocId.indexOf("-")+1);
+        var url = "hub/api/config/doc/" + docId;
+        var options = {
+            method: "GET",
+            handleAs: "json"
+        };
+        var deferred = request(url, options);
+        deferred.then(function(data){
+            doc._id = data._id;
+            doc._rev = data._rev;
+            var url = "hub/api/config/history/doc/" + historyDocId;
+            var options = {
+                method: "GET",
+                handleAs: "json"
+            };
+            var deferred = request(url, options);
+            deferred.then(function(data){
+                for (var key in data) {
+                    if (key !== "_id" && key !== "_rev" && key.indexOf("history_") < 0) {
+                        doc[key] = data[key];
+                    }
+                }
+                if (editor) {
+                    editor.setValue(JSON.stringify(doc, null, '\t'));
+                }
+            }, function(error){
+                console.log("configure.hbs: showHistoryDocument() - An unexpected error occurred: " + error);
+            });
+        }, function(error){
+            console.log("configure.hbs: showHistoryDocument() - An unexpected error occurred: " + error);
+        });
+    });
+}
+
+function saveDocument() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-form",
+		"dojo/dom-style",
+		"dojo/request"
+	],
+	function(dom, domClass, domForm, domStyle, request) {
+		if (editor) {
+			var doc = editor.getValue();
+			var annotations = editor.getSession().getAnnotations();
+			var hasError = false;
+			annotations.forEach(function(annotation) {
+				if (annotation.type == "error") hasError = true;
+			});
+			
+			if (hasError) {
+				var divStatusText = dom.byId("statusText");
+				domClass.remove(divStatusText, "hidden");
+				domClass.add(divStatusText, "errorText");
+				divStatusText.innerHTML = "Document has errors, correct before saving";
+				window.setTimeout(function() {clearStatus();}, 3000);
+				return;
+			}
+			
+			var select = dom.byId("selectDoc");
+			select.disabled = true;
+			var saveBtn = dom.byId("configBtnSave");
+			domClass.remove(saveBtn, "configBtnSave");
+			domClass.add(saveBtn, "configBtnSaveDisabled");
+			saveBtn.disabled = true;
+
+            var comments = domForm.fieldToObject("comments");
+            var user = "{{userid}}";
+            if (comments && comments === "Add a comment") {
+                comments = "";
+            }
+			var configData = {
+                doc: doc,
+                comments: comments,
+                user: user
+            };
+			var url = "hub/api/config/doc";
+			var options = {
+				method: "PUT",
+				handleAs: "text",
+				data: configData
+			};
+			
+			var deferred = request(url, options);
+			deferred.then(function(data){
+				console.log("Configure.js: saveDocument() - PUT successful, module config doc updated");
+				
+				var docResult = JSON.parse(data);
+				var url = "hub/api/config/doc/" + docResult.id;
+				var options = {
+					method: "GET",
+					handleAs: "json"
+				};
+					
+				var deferred = request(url, options);
+				deferred.then(function(data){
+					if (editor) {
+						editor.setValue(JSON.stringify(data, null, '\t'));
+						var divEditor = dom.byId("editor");
+						var newHeight = (editor.getSession().getScreenLength() * editor.renderer.lineHeight) + editor.renderer.lineHeight;
+						domStyle.set(divEditor, "height", newHeight + "px");
+						editor.resize();
+					}
+					
+					select.disabled = false;
+					domClass.remove(saveBtn, "configBtnSaveDisabled");
+					domClass.add(saveBtn, "configBtnSave");
+					saveBtn.disabled = false;
+					var divStatusText = dom.byId("statusText");
+					domClass.remove(divStatusText, "hidden");
+					domClass.add(divStatusText, "successText");
+					divStatusText.innerHTML = "Document saved successfully";
+                    activateComments(false);
+					window.setTimeout(function() {clearStatus();}, 3000);
+				}, function(error){
+					console.log("configure.hbs: saveDocument() - An unexpected error occurred: " + error);
+					select.disabled = false;
+					domClass.remove(saveBtn, "configBtnSaveDisabled");
+					domClass.add(saveBtn, "configBtnSave");
+					saveBtn.disabled = false;
+					var divStatusText = dom.byId("statusText");
+					domClass.remove(divStatusText, "hidden");
+					domClass.add(divStatusText, "errorText");
+					divStatusText.innerHTML = "Error occurred while refreshing the document";
+                    activateComments(false);
+					window.setTimeout(function() {clearStatus();}, 3000);
+				});
+			}, function(error){
+				console.log("Configure.js: saveDocument() - PUT failed, an unexpected error occurred: " + error);
+				select.disabled = false;
+				domClass.remove(saveBtn, "configBtnSaveDisabled");
+				domClass.add(saveBtn, "configBtnSave");
+				saveBtn.disabled = false;
+				var divStatusText = dom.byId("statusText");
+				domClass.remove(divStatusText, "hidden");
+				domClass.add(divStatusText, "errorText");
+				divStatusText.innerHTML = "Failed to save document changes";
+				window.setTimeout(function() {clearStatus();}, 3000);
+			});
+		}
+	});
+}
+
+function showHistory() {
+    require([
+        "dojo/dom",
+        "dojo/dom-form",
+        "dojo/request"
+    ],
+    function(dom, domForm, request) {
+        var docId = domForm.fieldToObject("selectDoc");
+    });
+}
+
+function clearStatus() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var divStatusText = dom.byId("statusText");
+		domClass.remove(divStatusText, "successText");
+		domClass.remove(divStatusText, "errorText");
+		domClass.add(divStatusText, "hidden");
+	});
+}
+
+function activateComments(activate) {
+    require([
+        "dojo/dom",
+        "dojo/dom-class"
+    ],
+    function(dom, domClass) {
+        var comments = dom.byId("comments");
+        if (activate) {
+            if (comments.value === "Add a comment") {
+                domClass.remove(comments, "formTextFieldCommentsInactive");
+                comments.value = "";
+            }
+        } else {
+            domClass.add(comments, "formTextFieldCommentsInactive");
+            comments.value = "Add a comment";
+        }
+    });
+}
+</script>
+		
+
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div class="tabOn"><div class="tabTextOn">Edit</div></div>
+            <div class="tab" onclick="showView('confighistory', false);"><div class="tabText">History</div></div>
+		</div>
+		<div class="contentArea">
+			<div id="filters" class="filters">
+				<form id="filtersForm">
+				<div class="filtersText">Edit document</div>
+				<select id="selectDoc" name="selectDoc" class="filtersSelectFieldLong" onchange="showDocument();activateComments(false);">
+					<option value=""></option>
+				</select>
+				<button id="configBtnSave" class="configBtnSave hidden" type="button" onclick="saveDocument();"></button>
+				<div id="statusText" class="filtersStatusText hidden"></div>
+				</form>
+                <button id="configBtnHistory" class="configBtnHistory hidden" type="button" onclick="showView('confighistory', true);"></button>
+			</div>
+            <div id="commentsContainer" class="filters hidden">
+                <input id="comments" name="comments" class="formTextFieldComments formTextFieldCommentsInactive" type="text" value="Add a comment" onclick="activateComments(true);"/>
+            </div>
+			<div id="editor"></div>
+		</div>
+	</div>
+
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/twilight");
+    editor.getSession().setMode("ace/mode/json");
+	editor.$blockScrolling = Infinity;
+    document.getElementById("editor").style.fontSize='16px';
+	//editor.setValue("{name: 'name', value: 'value'}");
+</script>
+
+</div>

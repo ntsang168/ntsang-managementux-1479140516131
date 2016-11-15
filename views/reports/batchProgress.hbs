@@ -1,0 +1,377 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/domReady!"
+],
+function(domClass, on) {
+	var reportData = null;
+	var reportDataExport = null;
+	
+	renderReport();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridReport");
+		grid.resize();
+	});
+});
+
+function showReportList() {
+	window.location = "analytics";
+}
+
+function renderReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojo/DeferredList",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"dojox/charting/Chart",
+		"dojox/charting/themes/Adobebricks",
+		"dojox/charting/plot2d/Bars",
+		"dojox/charting/plot2d/Columns",
+		"dojox/charting/action2d/Highlight",
+		"dojox/charting/action2d/Tooltip",
+		"dojox/charting/plot2d/Markers",
+		"dojox/charting/axis2d/Default",
+		"dojox/charting/widget/Legend",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+		"scripts/constants/Constants",
+	],
+	function (dom, domForm, domConstruct, topic, request,
+			  DeferredList, EnhancedGrid, GridPagination, ItemFileWriteStore,
+			  Chart, theme, Bars, Columns, Highlight, Tooltip, Markers, Default, Legend,
+			  JSUtil, PubSubTopics, Constants) {
+		var url = "hub/api/analytics/batchprogress";
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+		
+		var deferred = request(url, options);
+		deferred.then(function(batches) {
+			//console.log(batches);
+			//var ticketIds = []
+			var deferredListTickets = [];
+			batches.batches.forEach(function(batch) {
+				//console.log(batch);
+				var urlTickets = "hub/api/analytics/ticketsanswerable";
+				var optionsTickets = {
+					method: "POST",
+					handleAs: "json",
+					data: {
+						ticketids: batch.ticketIds
+					}
+				}
+				//ticketIds = ticketIds.concat(batch.ticketIds);
+				var deferredTickets = request(urlTickets, optionsTickets);
+				deferredListTickets.push(deferredTickets);
+			});
+			//console.log(ticketIds);
+			
+			/*
+			var urlTickets = "hub/api/analytics/ticketsanswerable";
+			var optionsTickets = {
+				method: "POST",
+				handleAs: "json",
+				data: {
+					ticketids: ticketIds
+				}
+			}
+			*/
+			
+			var dl = new DeferredList(deferredListTickets);
+			dl.then(function(result) {
+				//console.log(result);
+				var ticketsAnswerable = {};
+				result.forEach(function(subResult) {
+					if (subResult[0]) {
+						//console.log(subResult[1].tickets);
+						subResult[1].tickets.forEach(function(ticket) {
+							if (ticket.answerable) {
+								ticketsAnswerable[ticket.id] = ticket.answerable;
+							} else {
+								ticketsAnswerable[ticket.id] = "noresponse";
+							}
+						});
+					}
+				});
+				/*
+				var ticketsAnswerable = {};
+				tickets.tickets.forEach(function(ticket) {
+					if (ticket.answerable) {
+						ticketsAnswerable[ticket.id] = ticket.answerable;
+					} else {
+						ticketsAnswerable[ticket.id] = "noresponse";
+					}
+				});
+				*/
+				
+				var batchProgress = [];
+				var reportDataExport = [];
+				batches.batches.forEach(function(batch) {
+					var owner = batch.owner;
+					var name = batch.name;
+					var type = batch.type;
+					var area = batch.area;
+					var assignedDate = batch.assignedDate;
+					var ticketIds = batch.ticketIds;
+					
+					var yes = 0;
+					var no = 0;
+					var maybe = 0;
+					var noresponse = 0;
+					var total = 0;
+					var complete = 0;
+					ticketIds.forEach(function(ticketId) {
+						if (ticketsAnswerable[ticketId]) {
+							total++;
+							switch(ticketsAnswerable[ticketId]) {
+								case 'yes':
+									yes++;
+									break;
+								case 'no':
+									no++;
+									break;
+								case 'maybe':
+									maybe++;
+									break;
+								default:
+									noresponse++;
+									break;
+								
+							}
+						}
+					});
+					
+					//console.log(owner, name, type, area, yes, no, maybe, noresponse, total);
+					
+					if (total > 0) {
+						complete = ((total - noresponse) / total) * 100;
+						complete = Math.round(complete);
+						
+						var batchEntry = {
+							id: batch.id,
+							owner: owner,
+							name: name,
+							type: type,
+							area: area,
+							assignedDate: assignedDate,
+							yes: yes,
+							no: no,
+							maybe: maybe,
+							noresponse: noresponse,
+							total: total,
+							complete: complete
+						};
+						
+						var saveEntry = {
+							id: batch.id,
+							owner: owner,
+							name: name,
+							type: type,
+							area: area,
+							assignedDate: assignedDate,
+							yes: yes,
+							no: no,
+							maybe: maybe,
+							noresponse: noresponse,
+							total: total,
+							complete: complete
+						};
+						
+						batchProgress.push(batchEntry);
+						reportDataExport.push(saveEntry);
+					}
+				});
+				
+				topic.publish(PubSubTopics.ANALYTICS_SAVE_BATCH_PROGRESS_REPORT_DATA, batchProgress, reportDataExport);
+				
+				var gdata = {
+					identifier: 'id',
+					items: null
+				}
+				
+				// By default only show batches in progress
+				var subsetReportData = [];
+				batchProgress.forEach(function(row) {
+					//console.log(row);
+					if ((row.total > 0) && (row.complete >= 0) && (row.complete < 100)) {
+						subsetReportData.push(row);
+					}
+				});
+				gdata.items = subsetReportData;
+				
+				var store = new ItemFileWriteStore({data: gdata});
+					
+				var layout = [[
+					{'name': 'Owner', 'field': 'owner', 'width': '15%', noresize: true},
+					{'name': 'Batch Name', 'field': 'name', 'width': '25%', noresize: true},
+					{'name': 'Batch Area', 'field': 'area', 'width': '20%', noresize: true},
+					{'name': 'Total Tickets', 'field': 'total', 'width': '10%', noresize: true},
+					{'name': 'Needs Response', 'field': 'noresponse', 'width': '10%', noresize: true},
+					{'name': '% Complete', 'field': 'complete', 'width': '10%', noresize: true}
+				]];
+					
+				var grid = new dojox.grid.EnhancedGrid({
+					id: 'gridReport',
+					store: store,
+					structure: layout,
+					rowSelector: '20px',
+					autoHeight: true,
+					sortInfo: 2,
+					plugins: {
+						pagination: {
+							defaultPageSize: 20,
+							pageSizes: ["20", "50", "100"],
+							description: true,
+							sizeSwitch: true,
+							pageStepper: true,
+							gotoButton: true,
+							/*page step to be displayed*/
+							maxPageStep: 5,
+							/*position of the pagination bar*/
+							position: "top"
+						}
+					}
+				}, document.createElement('div'));
+				
+				dom.byId("gridReportDiv").appendChild(grid.domNode);
+					
+				grid.startup();
+				
+			}, function(err){
+				console.log("batchProgress: renderReport() - An unexpected error occurred: " + err);
+			});
+		}, function(err){
+			console.log("batchProgress: renderReport() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function refreshReportData() {
+	require([
+		"dojo/dom-form",
+		"dojox/grid/EnhancedGrid",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/constants/Constants"
+	],
+	function (domForm, EnhancedGrid, ItemFileWriteStore, Constants) {
+		var showBatches = domForm.fieldToObject("showBatches");
+		//console.log("refresh report data", showBatches, this.reportData);
+		var gdata = {
+			identifier: 'id',
+			items: null
+		}
+		
+		if (showBatches == Constants.ANALYTICS_SHOW_ALL) {
+			gdata.items = this.reportData;
+		} else if (showBatches == Constants.ANALYTICS_SHOW_IN_PROGRESS) {
+			var subsetReportData = [];
+			this.reportData.forEach(function(row) {
+				if ((row.total > 0) && (row.complete >= 0) && (row.complete < 100)) {
+					subsetReportData.push(row);
+				}
+			});
+			gdata.items = subsetReportData;
+		} else if (showBatches == Constants.ANALYTICS_SHOW_COMPLETED) {
+			var subsetReportData = [];
+			this.reportData.forEach(function(row) {
+				if (row.complete == 100) {
+					subsetReportData.push(row);
+				}
+			});
+			gdata.items = subsetReportData;
+		}
+				
+		var newStore = new ItemFileWriteStore({data: gdata});
+		var grid = dijit.byId("gridReport");
+		grid.setStore(newStore);
+	});
+}
+
+function downloadReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"scripts/utils/JSUtil"
+	],
+	function(dom, domConstruct, JSUtil) {
+		var csvData = JSUtil.JSONToCSVConvertor(reportDataExport, true);
+		//console.log(csvData);
+		
+		var divDownloadReportLink = dom.byId("downloadReportLink");
+		domConstruct.empty(divDownloadReportLink);
+		var blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+		var url = URL.createObjectURL(blob);     
+		domConstruct.create("a", { id: "downloadLink", href: url, download: "export.csv", innerHTML: "link", style: "visibility:hidden" }, divDownloadReportLink);
+		var downloadLink = dom.byId("downloadLink");
+		downloadLink.click();
+	});
+}
+
+
+require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.ANALYTICS_SAVE_BATCH_PROGRESS_REPORT_DATA, function(data, dataExport) {
+		reportData = data;
+		reportDataExport = dataExport;
+	});
+});
+</script>
+		
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div id="tabSelectReportAttachPoint" class="tab" onclick="showReportList();"><div id="tabSelectReportTextAttachPoint" class="tabText">Select Report</div></div>
+			<div id="tabDividerAttachPoint" class="tabDivider"></div>
+			<div id="tabReportAttachPoint" class="tabOn"><div id="tabReportNameAttachPoint" class="tabTextStatic">Batch Progress</div></div>
+		</div>
+		<div id="viewReportListAttachPoint" class="contentArea">
+			<div id="reportFiltersAttachPoint" class="filters">
+				<form id="filtersForm" onkeydown="if (event.keyCode == 13) { refreshReportData(); return false; }">
+				<div class="filtersText">Show</div>
+				<select id="showBatches" name="showBatches" class="filtersSelectField" onchange="refreshReportData();">
+					<option value="all">All</option>
+					<option value="inprogress" selected>In Progress</option>
+					<option value="completed">Completed</option>
+				</select>
+				<button class="btnDownload" type="button" onclick="downloadReport();"></button>
+				</form>
+			</div>
+			<div class="gridArea">
+				<div id="gridReportDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadReportLink"></div>
+		</div>
+	</div>
+
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/btnDownloadOn.png"
+			)
+		</script>
+	</div>
+	-->
+</div>

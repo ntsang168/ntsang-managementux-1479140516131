@@ -1,28 +1,70 @@
-/*eslint-env node*/
-
-//------------------------------------------------------------------------------
-// node.js starter application for Bluemix
-//------------------------------------------------------------------------------
-
-// This application uses express as its web server
-// for more info, see: http://expressjs.com
+/**
+ * Module dependencies.
+ */
 var express = require('express');
+var handlebars = require('express-handlebars');
+var csv = require('express-csv');
+var path = require('path');
+var favicon = require('serve-favicon');
+var logger = require('morgan');
+var methodOverride = require('method-override');
+var session = require('express-session');
+var bodyParser = require('body-parser');
+var multer = require('multer');
+var cors = require('cors');
 
-// cfenv provides access to your Cloud Foundry environment
-// for more info, see: https://www.npmjs.com/package/cfenv
-var cfenv = require('cfenv');
 
-// create a new express server
+/**
+ * App configuration
+ */
 var app = express();
 
-// serve the files out of ./public as our main files
-app.use(express.static(__dirname + '/public'));
+//app.set('port', process.env.PORT || 5990);
+app.set('views', path.join(__dirname, 'views'));
+//app.use(favicon(__dirname + '/public/favicon.ico'));
+app.engine('hbs', handlebars({extname:'hbs', defaultLayout:'main.hbs'}));
+app.set('view engine', 'hbs');
+app.use(logger('dev'));
+app.use(methodOverride());
+//app.use(session({ resave: true,
+//                  saveUninitialized: true,
+//                  secret: 'uwotm8' }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+//app.use(bodyParser.json({limit: '1000mb'}));
+//app.use(bodyParser.urlencoded({limit: '1000mb', extended: true}));
+app.use(multer());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/app-client', express.static(path.join(__dirname, 'src/app-client')));
+app.use(cors())
 
-// get the app environment from Cloud Foundry
-var appEnv = cfenv.getAppEnv();
 
-// start server on the specified port and binding host
-app.listen(appEnv.port, '0.0.0.0', function() {
-  // print a message when the server starts listening
-  console.log("server starting on " + appEnv.url);
-});
+/**
+ * Site routes
+ */
+var routes = require('./routes/site')(app);
+
+
+/**
+ * API routes
+ */
+var api = require('./routes/api')(app);
+
+
+/**
+ * Jobs
+ */
+var jobs = require('./jobs');
+app.get('/startjobs', jobs.executeStartJobs);
+app.get('/stopjobs', jobs.executeStopJobs);
+
+
+/**
+ * Error routes
+ */
+var error = require('./routes/error')(app);
+
+
+
+module.exports = app;
+

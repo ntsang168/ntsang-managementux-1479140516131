@@ -1,0 +1,345 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+var downloadURL = "";
+
+require([
+	"dojo/parser",
+    "dojo/dom",
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/domReady!"
+],
+function(parser, dom, domClass, on) {
+	renderReport(false);
+	
+	parser.parse();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridReport");
+		grid.resize();
+	});
+});
+
+function showReportList() {
+	window.location = "analytics";
+}
+
+function renderReport(refresh) {
+	require([
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojo/DeferredList",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"dojox/charting/Chart",
+		"dojox/charting/themes/Adobebricks",
+		"dojox/charting/plot2d/Bars",
+		"dojox/charting/plot2d/Columns",
+		"dojox/charting/action2d/Highlight",
+		"dojox/charting/action2d/Tooltip",
+		"dojox/charting/plot2d/Markers",
+		"dojox/charting/axis2d/Default",
+		"dojox/charting/widget/Legend",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+		"scripts/constants/Constants",
+	],
+	function (dom, domForm, domConstruct, topic, request,
+			  DeferredList, EnhancedGrid, GridPagination, ItemFileWriteStore,
+			  Chart, theme, Bars, Columns, Highlight, Tooltip, Markers, Default, Legend,
+			  JSUtil, PubSubTopics, Constants) {
+		
+		var limit = domForm.fieldToObject("limit");
+		var startDate = domForm.fieldToObject("startDate");
+		var endDate = domForm.fieldToObject("endDate");
+		var collection = domForm.fieldToObject("collection");
+		var options = {
+			method: "GET",
+			handleAs: "json"
+		};
+
+		var url = "hub/api/analytics/dynamicconfidence/history?" +
+				  "collection=" + collection;
+        if (startDate || endDate) {
+            url += "&start=" + startDate +
+                    "&end=" + endDate;
+        } else {
+            url += "&limit=" + limit;
+        }
+        downloadURL = url + "&output=txt";
+        url += "&output=json";
+		
+		hideAllCalendars();
+		showProgressBar();
+		var deferred = request(url, options);
+		deferred.then(function(results) {
+			var gdata = {
+				identifier: 'id',
+				items: null
+			};
+            var reportData = [];
+			var confidenceValues = [];
+			var count = 0;
+			results.confidence_values.forEach(function(values) {
+                var row = {
+                    id: count,
+                    ticket_id: values.ticket_id,
+                    timestamp: values.timestamp,
+                    log_id: values.log_id
+                };
+                var rowReport = [values.timestamp];
+                var pos = 1;
+                values.confidence_values.forEach(function(value) {
+                    row["confidence" + pos] = value.medium;
+                    rowReport.push(value.medium);
+                    pos++;
+                });
+                reportData.push(rowReport);
+                confidenceValues.push(row);
+				count++;
+			});
+			gdata.items = confidenceValues;
+			
+			if (!refresh) {
+				var store = new ItemFileWriteStore({data: gdata});
+					
+				var layout = [[
+                    {'name': 'Timestamp', 'field': 'timestamp', 'width': '25%', noresize: true},
+					{'name': 'Ticket ID', 'field': 'ticket_id', 'width': '25%', noresize: true},
+                    {'name': 'Confidence 1', 'field': 'confidence1', 'width': '10%', noresize: true},
+                    {'name': 'Confidence 2', 'field': 'confidence2', 'width': '10%', noresize: true},
+                    {'name': 'Confidence 3', 'field': 'confidence3', 'width': '10%', noresize: true},
+                    {'name': 'Confidence 4', 'field': 'confidence4', 'width': '10%', noresize: true},
+                    {'name': 'Confidence 5', 'field': 'confidence5', 'width': '10%', noresize: true},
+				]];
+					
+				var grid = new dojox.grid.EnhancedGrid({
+					id: 'gridReport',
+					store: store,
+					structure: layout,
+					rowSelector: '20px',
+					autoHeight: true,
+					selectable: true,
+					plugins: {
+						pagination: {
+							defaultPageSize: 20,
+							pageSizes: ["20", "50", "100", "500", "1000"],
+							description: true,
+							sizeSwitch: true,
+							pageStepper: true,
+							gotoButton: true,
+							/*page step to be displayed*/
+							maxPageStep: 5,
+							/*position of the pagination bar*/
+							position: "top"
+						}
+					}
+				}, document.createElement('div'));
+				
+				dom.byId("gridReportDiv").appendChild(grid.domNode);
+					
+				grid.startup();
+				hideProgressBar();
+			} else {
+				var newStore = new ItemFileWriteStore({data: gdata});
+				var grid = dijit.byId("gridReport");
+				grid.setStore(newStore);
+				hideProgressBar();
+			}
+
+            renderLineChart(reportData.reverse());
+		}, function(err){
+			hideProgressBar();
+			console.log("modifiedTicketsProcessedDetails: renderReport() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function downloadReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"scripts/utils/JSUtil"
+	],
+	function(dom, domConstruct, JSUtil) {
+		var divDownloadReportLink = dom.byId("downloadReportLink");
+		domConstruct.empty(divDownloadReportLink);
+		domConstruct.create("a", { id: "downloadLink", href: downloadURL, download: "report.txt", innerHTML: "link", style: "visibility:hidden" }, divDownloadReportLink);
+		var downloadLink = dom.byId("downloadLink");
+		downloadLink.click();
+	});
+}
+
+function showProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var btnRefresh = dom.byId("btnRefresh");
+		var gridDiv = dom.byId("gridReportDiv");
+		domClass.remove(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "0.5");
+		btnRefresh.removeAttribute("onclick");
+		domClass.remove(btnRefresh, "logBtnRefresh");
+		domClass.add(btnRefresh, "logBtnRefreshDisabled");
+	});
+}
+
+function hideProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridReportDiv");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.add(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "1.0");
+		btnRefresh.setAttribute("onclick", "renderReport(true)");
+		domClass.remove(btnRefresh, "logBtnRefreshDisabled");
+		domClass.add(btnRefresh, "logBtnRefresh");
+	});
+}
+
+function showCalendar(calendar) {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarDiv = dom.byId(calendar);
+		domClass.remove(calendarDiv, "hidden");
+		domClass.add(calendarDiv, "datePickerContainer");
+	});
+}
+
+function hideCalendar(calendar) {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarDiv = dom.byId(calendar);
+		domClass.remove(calendarDiv, "datePickerContainer");
+		domClass.add(calendarDiv, "hidden");
+	});
+}
+
+function hideAllCalendars() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var calendarStartDateDiv = dom.byId("startDateCalendar");
+		domClass.remove(calendarStartDateDiv, "datePickerContainer");
+		domClass.add(calendarStartDateDiv, "hidden");
+		
+		var calendarEndDateDiv = dom.byId("endDateCalendar");
+		domClass.remove(calendarEndDateDiv, "datePickerContainer");
+		domClass.add(calendarEndDateDiv, "hidden");
+	});
+}
+</script>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+google.charts.load('current', {packages: ['corechart', 'line']});
+function renderLineChart(dataConfidence) {
+    var reportData = [['timestamp', 'confidence1', 'confidence2', 'confidence3', 'confidence4', 'confidence5']];
+    reportData = reportData.concat(dataConfidence);
+    var data = google.visualization.arrayToDataTable(reportData);
+
+    var options = {
+        height: 400,
+        width: '100%',
+        hAxis: {
+            title: 'Timestamp'
+        },
+        vAxis: {
+            title: 'Confidence Threshold'
+        }
+    };
+
+    var chart = new google.visualization.LineChart(document.getElementById('chart'));
+
+    chart.draw(data, options);
+}
+</script>
+
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div id="tabSelectReportAttachPoint" class="tab" onclick="showReportList();"><div id="tabSelectReportTextAttachPoint" class="tabText">Select Report</div></div>
+			<div id="tabDividerAttachPoint" class="tabDivider"></div>
+			<div id="tabReportAttachPoint" class="tabOn"><div id="tabReportNameAttachPoint" class="tabTextStatic">Dynamic Confidence Values</div></div>
+		</div>
+		<div id="viewReportListAttachPoint" class="contentArea">
+			<div id="reportFiltersAttachPoint" class="filters">
+				<form id="filtersForm" onkeydown="if (event.keyCode == 13) { renderReport(true); return false; }">
+				<div class="logFiltersText">Last </div>
+				<input id="limit" name="limit" class="filtersNumberField" type="text" value="200"/>
+				<div class="logFiltersText">-OR-</div>
+				<div class="logFiltersSpacer"></div>
+				<div class="logFiltersText">Start Date</div>
+				<div class="dateFieldContainer">
+					<input id="startDate" name="startDate" class="formDateField" type="text" onclick="showCalendar('startDateCalendar');" onchange="hideCalendar('startDateCalendar');" />
+					<div id="startDateCalendar" class="hidden" data-dojo-type="dijit/Calendar" data-dojo-props="dayWidth:'abbr'">
+						<script type="dojo/method" data-dojo-event="onChange" data-dojo-args="value">
+							require(["dojo/dom"], function(dom){
+								var newDate = new Date(value);
+								var newDateStr = newDate.toISOString();
+								newDateStr = newDateStr.replace(newDateStr.substring(newDateStr.indexOf("T")), "T00:00:00.000Z");
+								dom.byId('startDate').value = newDateStr;
+								hideCalendar("startDateCalendar");
+							});
+						</script>
+					</div>
+				</div>
+				<div class="logFiltersText">End Date</div>
+				<div class="dateFieldContainer">
+					<input id="endDate" name="endDate" class="formDateField" type="text" onfocus="showCalendar('endDateCalendar');" onchange="hideCalendar('endDateCalendar');"/>
+					<div id="endDateCalendar" class="hidden" data-dojo-type="dijit/Calendar" data-dojo-props="dayWidth:'abbr'">
+						<script type="dojo/method" data-dojo-event="onChange" data-dojo-args="value">
+							require(["dojo/dom"], function(dom){
+								var newDate = new Date(value);
+								var newDateStr = newDate.toISOString();
+								newDateStr = newDateStr.replace(newDateStr.substring(newDateStr.indexOf("T")), "T00:00:00.000Z");
+								dom.byId('endDate').value = newDateStr;
+								hideCalendar("endDateCalendar");
+							});
+						</script>
+					</div>
+				</div>
+                <button id="btnRefresh" class="logBtnRefresh" type="button" onclick="renderReport(true);"></button>
+                <div id="refreshProgress" class="progressIndicator hidden"></div>
+				<button class="btnDownload" type="button" onclick="downloadReport();"></button>
+				</form>
+			</div>
+			<div class="filters">
+				<div class="filtersText">Type</div>
+				<select id="collection" name="collection" class="filtersSelectField" style="width: 120px" onchange="renderReport(true);">
+                    <option value="SL">Spotlight</option>
+					<option value="BL">Baseline</option>
+                    <option value="HW">Hardware</option>
+				</select>
+			</div>
+            <div id="chart" class="chartArea"></div>
+			<div class="gridArea">
+				<div id="gridReportDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadReportLink"></div>
+		</div>
+	</div>
+</div>

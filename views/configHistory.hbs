@@ -1,0 +1,357 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/parser",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/on",
+	"dijit/ProgressBar",
+	"dijit/Dialog",
+	"dojo/domReady!"
+],
+function(parser, dom, domClass, on, ProgressBar, Dialog) {
+    var docId = "{{docid}}";
+    loadModuleDocuments(docId);
+
+    parser.parse();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridHistory");
+		grid.resize();
+	});
+});
+
+function showView(view) {
+    window.location = view;
+}
+
+function loadModuleDocuments(docId) {
+    require([
+        "dojo/dom",
+        "dojo/request",
+    ],
+    function(dom, request) {
+        var url = "hub/api/config/list";
+        var options = {
+            method: "GET",
+            handleAs: "json"
+        };
+
+        var deferred = request(url, options);
+        deferred.then(function(data){
+            //console.log(data.moduleIds);
+            var select = dom.byId("selectDoc");
+            data.moduleIds.forEach(function(id) {
+                var option = document.createElement("option");
+                option.text = id;
+                option.value = id;
+                if (id === docId) option.selected = true;
+                select.appendChild(option);
+            });
+            if (docId) getDocumentHistory();
+        }, function(error){
+            console.log("configHistory: loadModuleDocuments() - An unexpected error occurred: " + error);
+        });
+    });
+}
+
+function getDocumentHistory() {
+	require([
+		"dojo/_base/lang",
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-class",
+		"dojo/dom-style",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/utils/JSUtil",
+		"scripts/constants/Constants",
+		"scripts/constants/PubSubTopics",
+		"scripts/widgets/ConfigDocDialog",
+		"dojo/domReady!"
+	],
+	function(lang, dom, domForm, domClass, domStyle, domConstruct, topic, request, EnhancedGrid,
+			 GridPagination, ItemFileWriteStore, JSUtil, Constants, PubSubTopics, ConfigDocDialog) {
+		var docId = domForm.fieldToObject("selectDoc");
+        var limit = domForm.fieldToObject("limit");
+		
+		var url = "hub/api/config/history?id=" + docId + "&limit=" + limit;
+		var options = {
+			method: "GET",
+			handleAs: "json"
+		};
+		
+		clearStatus();
+		showProgressBar();
+		var deferred = request(url, options);
+		deferred.then(function(data){
+			//console.log(data);
+            if (dijit.byId("gridHistory")) {
+                var gdata = {
+                    identifier: 'id',
+                    items: []
+                }
+
+                data.rows.forEach(function(row) {
+                    gdata.items.push(dojo.mixin(
+                            {id: row.id},
+                            {history_modified_by: row.value.history_modified_by},
+                            {history_comments: row.value.history_comments},
+                            {history_timestamp: row.value.history_timestamp},
+                            {history_version: row.value.history_version}
+                    ));
+                });
+
+                var newStore = new ItemFileWriteStore({data: gdata});
+                newStore.comparatorMap = {};
+                newStore.comparatorMap["history_version"] = function(a, b){
+                    var na = Number(a),
+                            nb = Number(b);
+                    if (na < nb) return -1;
+                    if (na > nb) return 1;
+                    return 0;
+                };
+                var grid = dijit.byId("gridHistory");
+                grid.setStore(newStore);
+            } else {
+                var gdata = {
+                    identifier: 'id',
+                    items: []
+                };
+
+                data.rows.forEach(function(row) {
+                    gdata.items.push(dojo.mixin(
+                        {id: row.id},
+                        {history_modified_by: row.value.history_modified_by},
+                        {history_comments: row.value.history_comments},
+                        {history_timestamp: row.value.history_timestamp},
+                        {history_version: Number(row.value.history_version)}
+                    ));
+                });
+
+                var store = new ItemFileWriteStore({data: gdata});
+                store.comparatorMap = {};
+                store.comparatorMap["history_version"] = function(a, b){
+                    var na = Number(a),
+                        nb = Number(b);
+                    if (na < nb) return -1;
+                    if (na > nb) return 1;
+                    return 0;
+                };
+
+                var layout = [[
+                    {'name': 'ID', 'field': 'id', 'width': '15%', noresize: true},
+                    {'name': 'Version', 'field': 'history_version', 'width': '8%', noresize: true},
+                    {'name': 'Modified By', 'field': 'history_modified_by', 'width': '15%', noresize: true},
+                    {'name': 'Timestamp', 'field': 'history_timestamp', 'width': '15%', noresize: true},
+                    {'name': 'Comments', 'field': 'history_comments', 'width': '47%', noresize: true}
+                ]];
+
+                var gridHistory = new dojox.grid.EnhancedGrid({
+                    id: 'gridHistory',
+                    store: store,
+                    structure: layout,
+                    rowSelector: '20px',
+                    autoHeight: true,
+                    sortInfo: -2,
+                    selectable: true,
+                    plugins: {
+                        pagination: {
+                            defaultPageSize: 20,
+                            pageSizes: ["20", "50", "100"],
+                            description: true,
+                            sizeSwitch: true,
+                            pageStepper: true,
+                            gotoButton: true,
+                            maxPageStep: 5,
+                            position: "top"
+                        }
+                    }
+                }, document.createElement('div'));
+
+                gridHistory.on("RowClick", function(evt){
+                    var divDialog = dom.byId(configDialog.id);
+                    var dialogHeight = Math.round((window.innerHeight * 0.80));
+                    var dialogWidth = Math.round((window.innerWidth * 0.80));
+                    domStyle.set(divDialog, "height", dialogHeight.toString() + "px");
+                    domStyle.set(divDialog, "width", dialogWidth.toString() + "px");
+
+                    var idx = evt.rowIndex,
+                            rowData = gridHistory.getItem(idx);
+
+                    var url = "hub/api/config/history/doc/" + rowData.id[0];
+                    var options = {
+                        method: "GET",
+                        handleAs: "json"
+                    };
+
+                    var deferred = request(url, options);
+                    deferred.then(function(data){
+                        configDialog.set("title", rowData.id[0].substring(rowData.id[0].indexOf("-")+1) + " - version " + rowData.history_version[0]);
+                        configDialog.show();
+
+                        var configDocContent = dom.byId("configDocContent");
+                        domConstruct.empty(configDocContent);
+
+                        var dialog = new ConfigDocDialog({
+                            dialogHeight: dialogHeight,
+                            dialogWidth: dialogWidth,
+                            historyDocId: rowData.id[0],
+                            configDoc: JSON.stringify(data),
+                            timestamp: rowData.history_timestamp[0],
+                            comments: rowData.history_comments[0]
+                        });
+                        dialog.placeAt(configDocContent);
+                    }, function(error){
+                        console.log("configHistory: getDocumentHistory() - An unexpected error occurred: " + error);
+                    });
+                }, true);
+
+                dom.byId("gridHistoryContainer").appendChild(gridHistory.domNode);
+                gridHistory.startup();
+            }
+            hideProgressBar();
+		}, function(error){
+			console.log("configHistory: getDocumentHistory() - An unexpected error occurred: " + error);
+			var divStatusMsg = dom.byId("testStatusMsg");
+			var divStatusMsgText = dom.byId("testStatusMsgText");
+			domClass.remove(divStatusMsg, "hidden");
+			domClass.add(divStatusMsg, "testStatusMsgError");
+			divStatusMsgText.innerHTML = "Unable to get config doc history";
+			var gdata = {
+				identifier: 'id',
+				items: []
+			};
+			var newStore = new ItemFileWriteStore({data: gdata});
+			var grid = dijit.byId("gridHistory");
+			grid.setStore(newStore);
+			hideProgressBar();
+		});
+		
+		topic.subscribe(PubSubTopics.CONFIG_DOC_DIALOG_CLOSE, lang.hitch(this, "emptyDialog"));
+        topic.subscribe(PubSubTopics.CONFIG_DOC_DIALOG_REVERT, lang.hitch(this, "revertToHistoryDoc"));
+	});
+}
+
+function emptyDialog() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"dijit/registry"
+	],
+	function(dom, domConstruct, registry) {
+		configDialog.hide();
+		var configDocContent = dom.byId("configDocContent");
+		var widgets = registry.findWidgets(configDocContent);
+		dojo.forEach(widgets, function(w) {
+			w.destroyRecursive(false);
+		});
+		domConstruct.empty(configDocContent);
+	});
+}
+
+function revertToHistoryDoc(historyDocId) {
+    emptyDialog();
+    window.location = "configure?historydocid=" + historyDocId;
+}
+
+function showProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridHistoryContainer");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.remove(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "0.5");
+		btnRefresh.removeAttribute("onclick");
+		domClass.remove(btnRefresh, "logBtnRefresh");
+		domClass.add(btnRefresh, "logBtnRefreshDisabled");
+	});
+}
+
+function hideProgressBar() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/dom-style"
+	],
+	function(dom, domClass, domStyle) {
+		var progressBar = dom.byId("refreshProgress");
+		var gridDiv = dom.byId("gridHistoryContainer");
+		var btnRefresh = dom.byId("btnRefresh");
+		domClass.add(progressBar, "hidden");
+		domStyle.set(gridDiv, "opacity", "1.0");
+		btnRefresh.setAttribute("onclick", "getDocumentHistory()");
+		domClass.remove(btnRefresh, "logBtnRefreshDisabled");
+		domClass.add(btnRefresh, "logBtnRefresh");
+	});
+}
+
+function clearStatus() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class"
+	],
+	function(dom, domClass) {
+		var divStatusMsg = dom.byId("testStatusMsg");
+		domClass.remove(divStatusMsg, "testStatusMsgSuccess");
+		domClass.remove(divStatusMsg, "testStatusMsgError");
+		domClass.add(divStatusMsg, "hidden");
+	});
+}
+</script>
+
+	<div id="content" class="contentBase">
+		<div class="tabs">
+            <div class="tabSpacer"></div>
+            <div class="tab" onclick="showView('configure');"><div class="tabText">Edit</div></div>
+            <div class="tabOn"><div class="tabTextOn">History</div></div>
+		</div>
+		<div class="contentAreaLogging">
+			<div id="testStatusMsg" class="testStatusMsg hidden">
+				<table width="100%">
+					<tr>
+						<td width="90%"><div id="testStatusMsgText" class="testStatusMsgText"></div></td>
+						<td width="10%" align="right"><div class="testStatusMsgClose" onclick="clearStatus()">X</div></td>
+					</tr>
+				</table>
+			</div>
+			<div id="logFiltersAttachPoint" class="logFilters">
+                <form id="filtersForm">
+                <div class="filtersText">View history</div>
+                <select id="selectDoc" name="selectDoc" class="filtersSelectFieldLong" onchange="getDocumentHistory();">
+                    <option value=""></option>
+                </select>
+                <div class="filtersText">Last </div>
+                <input id="limit" name="limit" class="logFiltersNumberField" type="text" value="100"/>
+                <button id="btnRefresh" class="logBtnRefresh" type="button" onclick="getDocumentHistory();"></button>
+                <div id="refreshProgress" class="progressIndicator hidden"></div>
+				<!--<div class="logFiltersText">Last </div>
+				<input id="testLimit" name="testLimit" class="logFiltersNumberField" type="text" value="100"/>
+				<div class="logFiltersText">ID</div>
+				<input id="testIdText" name="testIdText" class="logFiltersTextFieldId" type="text" value=""/>
+				<button id="btnRefresh" class="logBtnRefresh" type="button" onclick="getTestResults(true);"></button>
+				<div id="refreshProgress" class="progressIndicator hidden"></div>
+				<button class="logBtnDownload" type="button" onclick="downloadLogData();"></button>-->
+				</form>
+			</div>
+			<div class="logArea">
+				<div id="gridHistoryContainer" style="width:100%;"></div>
+			</div>
+		</div>
+	</div>
+	
+	<div data-dojo-type="dijit/Dialog" data-dojo-id="configDialog" title="">
+		<div id="configDocContent"></div>
+	</div>
+</div>

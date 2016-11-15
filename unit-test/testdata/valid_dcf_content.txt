@@ -1,0 +1,58 @@
+swg21234567
+1234567
+ 1234567
+1234567 
+N1234567
+7123456
+4123456
+nas8N1234567
+nas8n1234567
+Doc #: 1636559
+Doc#: 1636559
+Doc #1234567
+TechNote 1680642
+TechDoc 1680642
+TN:1110903
+TN: 1110903
+TN 1616935
+TN  1657060
+TN #:  1657060
+TN #1657060
+Doc: 1205991
+Doc# 1205991
+http://eclient.lenexa.ibm.com:9082/search/?fetch=source/TechNote/1570802
+https://eclient.lenexa.ibm.com:9445/search?fetch=source/TechNote/1490132
+www-01.ibm.com/support/docview.wss?uid=swg21384592
+http://www-01.ibm.com/support/docview.wss?uid=swg21384592
+www.ibm.com/support/docview.wss?uid=swg21384592
+http://www.ibm.com/support/docview.wss?uid=swg21384592
+http://www.ibm.com/support/docview.wss?rs=899&uid=swg21234567
+http://www.ibm.com/support/docview.wss?uid=swg21234567&rs=899
+http://www.ibm.com/support/docview.wss?nl=en-US&uid=swg21234567&rs=899
+https://www-304.ibm.com/support/entdocview.wss?uid=swg21593649
+http://www-01.ibm.com/support/docview.wss?uid=nas8N1012032
+
+http://www-01.ibm.com/support/docview.wss?uid=ssg1S4234567
+http://www-01.ibm.com/support/docview.wss?uid=ssg1s4234567
+www.ibm.com/support/docview.wss?uid=ssg1S1234567#AIXSDDPCM
+http://www-01.ibm.com/support/docview.wss?rs=0&q1=TS3200&uid=ssg1S4234567&loc=en_US&cs=utf-8&cc=us&lang=en
+ssg1S4234567
+http://www-01.ibm.com/support/docview.wss?uid=isg3S1234567
+http://www-01.ibm.com/support/docview.wss?uid=isg3T1234567
+http://www-01.ibm.com/support/docview.wss?uid=isg3P1234567
+http://www-01.ibm.com/support/docview.wss?uid=isg3p1234567
+http://www-01.ibm.com/support/docview.wss?uid=isg3p1234567&aid=1
+www-01.ibm.com/support/docview.wss?uid=isg3T1234567
+www-01.ibm.com/support/docview.wss?uid=isg3S1234567
+www-01.ibm.com/support/docview.wss?uid=isg3P1234567
+isg3S1234567
+http://eclient.lenexa.ibm.com:9082/search/?fetch=source/TechNote/C1234567
+isg3T1234567
+isg3P1234567
+C1234567
+swg2C1234567
+  C1234567   
+http://www-01.ibm.com/support/docview.wss?uid=swg2C1384592
+www.ibm.com/support/docview.wss?uid=swg2C1384592
+http://www.ibm.com/support/docview.wss?uid=swg2C1384592
+http://www.ibm.com/support/docview.wss?rs=899&uid=swg2C1234567

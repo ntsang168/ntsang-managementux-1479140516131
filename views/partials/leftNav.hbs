@@ -1,0 +1,181 @@
+<script>
+require([
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/request",
+	"dojo/domReady!"
+],
+function(dom, domClass, on, request) {
+	on(dom.byId("logo"), "click", function() {
+		showView("overview");
+	});
+	
+	var permissions = {
+		configure: ("{{permissions.configure}}" == "true"),
+		analytics: ("{{permissions.analytics}}" == "true"),
+		logging: ("{{permissions.logging}}" == "true"),
+		testing: ("{{permissions.testing}}" == "true"),
+		administration: ("{{permissions.administration}}" == "true")
+	};
+	
+	var mode = "{{mode}}";
+	var userId = "{{userid}}";
+	var view = "{{view}}";
+	
+	/*if (mode == "PROD") {
+		domClass.add(dom.byId("leftNavTesting"), "hidden");
+	}*/
+	
+	if (permissions.configure) {
+		domClass.remove(dom.byId("leftNavConfigure"), "leftNavItemDisabled");
+		domClass.remove(dom.byId("leftNavConfigureBtn"), "leftNavItemConfigureDisabled");
+		if (view == "configure") {
+			domClass.add(dom.byId("leftNavConfigure"), "leftNavItemOn");
+			domClass.add(dom.byId("leftNavConfigureBtn"), "leftNavItemConfigureSelected");
+		} else {
+			domClass.add(dom.byId("leftNavConfigure"), "leftNavItem");
+			domClass.add(dom.byId("leftNavConfigureBtn"), "leftNavItemConfigure");
+		}
+		on(dom.byId("leftNavConfigureBtn"), "click", function() {
+			showView("configure");
+		});
+	}
+	if (permissions.analytics) {
+		domClass.remove(dom.byId("leftNavAnalytics"), "leftNavItemDisabled");
+		domClass.remove(dom.byId("leftNavAnalyticsBtn"), "leftNavItemAnalyticsDisabled");
+		if (view == "analytics") {
+			domClass.add(dom.byId("leftNavAnalytics"), "leftNavItemOn");
+			domClass.add(dom.byId("leftNavAnalyticsBtn"), "leftNavItemAnalyticsSelected");
+		} else {
+			domClass.add(dom.byId("leftNavAnalytics"), "leftNavItem");
+			domClass.add(dom.byId("leftNavAnalyticsBtn"), "leftNavItemAnalytics");
+		}
+		on(dom.byId("leftNavAnalyticsBtn"), "click", function() {
+			showView("analytics");
+		});
+	}
+	if (permissions.logging) {
+		domClass.remove(dom.byId("leftNavLogging"), "leftNavItemDisabled");
+		domClass.remove(dom.byId("leftNavLoggingBtn"), "leftNavItemLoggingDisabled");
+		if (view == "logging") {
+			domClass.add(dom.byId("leftNavLogging"), "leftNavItemOn");
+			domClass.add(dom.byId("leftNavLoggingBtn"), "leftNavItemLoggingSelected");
+		} else {
+			domClass.add(dom.byId("leftNavLogging"), "leftNavItem");
+			domClass.add(dom.byId("leftNavLoggingBtn"), "leftNavItemLogging");
+		}
+		on(dom.byId("leftNavLoggingBtn"), "click", function() {
+			showView("logging");
+		});
+	}
+	if (permissions.testing) {
+		domClass.remove(dom.byId("leftNavTesting"), "leftNavItemDisabled");
+		domClass.remove(dom.byId("leftNavTestingBtn"), "leftNavItemTestingDisabled");
+		if (view == "testing") {
+			domClass.add(dom.byId("leftNavTesting"), "leftNavItemOn");
+			domClass.add(dom.byId("leftNavTestingBtn"), "leftNavItemTestingSelected");
+		} else {
+			domClass.add(dom.byId("leftNavTesting"), "leftNavItem");
+			domClass.add(dom.byId("leftNavTestingBtn"), "leftNavItemTesting");
+		}
+		on(dom.byId("leftNavTestingBtn"), "click", function() {
+			showView("testing");
+		});
+	}
+	if (permissions.administration) {
+		domClass.remove(dom.byId("leftNavAdministration"), "leftNavItemDisabled");
+		domClass.remove(dom.byId("leftNavAdministrationBtn"), "leftNavItemAdministrationDisabled");
+		if (view == "administration") {
+			domClass.add(dom.byId("leftNavAdministration"), "leftNavItemOn");
+			domClass.add(dom.byId("leftNavAdministrationBtn"), "leftNavItemAdministrationSelected");
+		} else {
+			domClass.add(dom.byId("leftNavAdministration"), "leftNavItem");
+			domClass.add(dom.byId("leftNavAdministrationBtn"), "leftNavItemAdministration");
+		}
+		on(dom.byId("leftNavAdministrationBtn"), "click", function() {
+			showView("administration");
+		});
+	}
+
+});
+	
+function hoverLeftNav() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/domReady!"
+	],
+	function(dom, domClass) {
+		var divLeftNav = dom.byId("leftNav");
+		var divContent = dom.byId("content");
+		domClass.remove(divLeftNav, "leftNavBase");
+		domClass.add(divLeftNav, "leftNavHover");
+		domClass.remove(divContent, "contentBase");
+		domClass.add(divContent, "contentHover");
+	});
+}
+
+function baseLeftNav() {
+	require([
+		"dojo/dom",
+		"dojo/dom-class",
+		"dojo/domReady!"
+	],
+	function(dom, domClass) {
+		var divLeftNav = dom.byId("leftNav");
+		var divContent = dom.byId("content");
+		domClass.remove(divLeftNav, "leftNavHover");
+		domClass.add(divLeftNav, "leftNavBase");
+		domClass.remove(divContent, "contentHover");
+		domClass.add(divContent, "contentBase");
+	});
+}
+
+function showView(view) {
+	window.location = view;
+}
+</script>
+
+	<div id="leftNav" class="leftNavBase" onmouseover="hoverLeftNav();" onmouseout="baseLeftNav();">
+		<div id="logo" class="logo"></div>
+		<div class="leftNavDivider"></div>
+		<!-- onclick="deselectLeftNavItem();selectLeftNavItem('leftNavItemConfigure');showContent('contentConfiguration');"-->
+
+		<div id="leftNavAnalytics" class="leftNavItemDisabled">
+			<div id="leftNavAnalyticsBtn" class="leftNavItemAnalyticsDisabled"></div>
+		</div>
+		<div id="leftNavLogging" class="leftNavItemDisabled">
+			<div id="leftNavLoggingBtn" class="leftNavItemLoggingDisabled"></div>
+		</div>
+		<div id="leftNavTesting" class="leftNavItemDisabled">
+			<div id="leftNavTestingBtn" class="leftNavItemTestingDisabled"></div>
+		</div>
+		<div id="leftNavConfigure" class="leftNavItemDisabled">
+			<div id="leftNavConfigureBtn" class="leftNavItemConfigureDisabled"></div>
+		</div>
+		<div id="leftNavAdministration" class="leftNavItemDisabled">
+			<div id="leftNavAdministrationBtn" class="leftNavItemAdministrationDisabled"></div>
+		</div>
+
+	</div>
+	
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/leftNavConfigureOn.png",
+				"images/leftNavAnalyticsOn.png",
+				"images/leftNavLoggingOn.png",
+				"images/leftNavAdministrationOn.png"
+			)
+		</script>
+	</div>
+	-->

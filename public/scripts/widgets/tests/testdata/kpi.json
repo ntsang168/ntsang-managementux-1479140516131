@@ -1,0 +1,125 @@
+ {
+	"items" : [ {
+		"title" : "Tickets Processed",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 140
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 140
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 140
+		} ]
+
+	}, {
+		"title" : "Tickets Processed Whitelist",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 39
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 39
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 39
+		} ]
+
+	}, {
+		"title" : "Tickets Updated for Support",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 37
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 37
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 37
+		} ]
+	}, {
+		"title" : "KMM Resolved (R)",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 0
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 0
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 0
+		} ]
+	}, {
+		"title" : "KMM Contributed (Y)",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 0
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 0
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 0
+		} ]
+	}, {
+		"title" : "KMM Not Related (N)",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 0
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 0
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 0
+		} ]
+	}, {
+		"title" : "KMM Unknown (U)",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 0
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 0
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 0
+		} ]
+	}, {
+		"title" : "KMM No Response",
+		"data" : [ {
+			"index" : 0,
+			"title" : "ALL",
+			"value" : 39
+		}, {
+			"index" : 1,
+			"title" : "SW",
+			"value" : 39
+		}, {
+			"index" : 2,
+			"title" : "HW",
+			"value" : 39
+		} ]
+	} ]
+}

@@ -1,0 +1,412 @@
+<div class="bodyContainer">
+	{{> leftNav}}
+	
+<script>
+require([
+	"dojo/dom-class",
+	"dojo/on",
+	"dojo/domReady!"
+],
+function(domClass, on) {
+	var reportData = null;
+	var reportDataExport = null;
+	
+	renderReport();
+	
+	on(window, "resize", function() {
+		var grid = dijit.byId("gridReport");
+		grid.resize();
+	});
+});
+
+function showReportList() {
+	window.location = "analytics";
+}
+
+function renderReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-form",
+		"dojo/dom-construct",
+		"dojo/topic",
+		"dojo/request",
+		"dojo/DeferredList",
+		"dojox/grid/EnhancedGrid",
+		"dojox/grid/enhanced/plugins/Pagination",
+		"dojo/data/ItemFileWriteStore",
+		"dojox/charting/Chart",
+		"dojox/charting/themes/Adobebricks",
+		"dojox/charting/plot2d/Bars",
+		"dojox/charting/plot2d/Columns",
+		"dojox/charting/action2d/Highlight",
+		"dojox/charting/action2d/Tooltip",
+		"dojox/charting/plot2d/Markers",
+		"dojox/charting/axis2d/Default",
+		"dojox/charting/widget/Legend",
+		"scripts/utils/JSUtil",
+		"scripts/constants/PubSubTopics",
+		"scripts/constants/Constants",
+	],
+	function (dom, domForm, domConstruct, topic, request,
+			  DeferredList, EnhancedGrid, GridPagination, ItemFileWriteStore,
+			  Chart, theme, Bars, Columns, Highlight, Tooltip, Markers, Default, Legend,
+			  JSUtil, PubSubTopics, Constants) {
+		var url = "hub/api/analytics/productscomponentsmap";
+		var options = {
+			method: "GET",
+			handleAs: "json",
+		}
+
+		var componentsMap = {};
+		var deferred = request(url, options);
+		deferred.then(function(result) {
+			componentsMap = result;
+			
+			var uniqueProductList = {};
+			for (key in componentsMap) {
+				if (!uniqueProductList[componentsMap[key]]) {
+					uniqueProductList[componentsMap[key]] = 1;
+				}
+			}
+			
+			var select = dom.byId("showProduct");
+			Object.keys(uniqueProductList).sort().forEach(function(key, i) {
+				var option = document.createElement("option");
+				option.text = key;
+				option.value = key;
+				select.appendChild(option);
+			});
+			
+			var url = "hub/api/analytics/batchprogress";
+			var options = {
+				method: "GET",
+				handleAs: "json",
+			}
+			
+			var deferred = request(url, options);
+			deferred.then(function(batches) {
+				var deferredListTickets = [];
+				
+				var ticketIds = [];
+				batches.batches.forEach(function(batch) {
+					ticketIds = ticketIds.concat(batch.ticketIds);
+				});
+				
+				var filterTicketIds = {}
+				ticketIds.forEach(function(id) {
+					if (!filterTicketIds[id]) {
+						filterTicketIds[id] = 1;
+					}
+				});
+				
+				var uniqueTicketIds = [];
+				var count = 1;
+				var batchLimit = 500;
+				var ticketIdsBatch = [];
+				for (var key in filterTicketIds) {
+					uniqueTicketIds.push(key);
+					if (count < batchLimit) {
+						ticketIdsBatch.push(key);
+						count++;
+					} else {
+						ticketIdsBatch.push(key);
+						var urlTickets = "hub/api/analytics/ticketdetails";
+						var optionsTickets = {
+							method: "POST",
+							handleAs: "json",
+							data: {
+								ticketids: ticketIdsBatch
+							}
+						}
+						var deferredTickets = request(urlTickets, optionsTickets);
+						deferredListTickets.push(deferredTickets);
+						
+						ticketIdsBatch = [];
+						count = 1;
+					}
+				}
+				
+				if (count > 1) {
+					var urlTickets = "hub/api/analytics/ticketdetails";
+					var optionsTickets = {
+						method: "POST",
+						handleAs: "json",
+						data: {
+							ticketids: ticketIdsBatch
+						}
+					}
+					var deferredTickets = request(urlTickets, optionsTickets);
+					deferredListTickets.push(deferredTickets);
+				}
+				
+				/*
+				batches.batches.forEach(function(batch) {
+					//console.log(batch);
+					var urlTickets = "hub/api/analytics/ticketdetails";
+					var optionsTickets = {
+						method: "POST",
+						handleAs: "json",
+						data: {
+							ticketids: batch.ticketIds
+						}
+					}
+					var deferredTickets = request(urlTickets, optionsTickets);
+					deferredListTickets.push(deferredTickets);
+				});
+				*/
+				
+				var dl = new DeferredList(deferredListTickets);
+				dl.then(function(result) {
+					var gdata = {
+						identifier: 'id',
+						items: []
+					}
+					var count = 1;
+					var reportData = [];
+					var reportDataExport = [];
+					result.forEach(function(subResult) {
+						if (subResult[0]) {
+							//console.log(subResult[1].tickets);
+							subResult[1].tickets.forEach(function(ticket) {
+								var product = "(Product not mapped)";
+								if (componentsMap[ticket.compId]) {
+									product = componentsMap[ticket.compId];
+								}
+								gdata.items.push(dojo.mixin({id: count}, {product: product}, ticket));
+								reportData.push(dojo.mixin({id: count}, {product: product}, ticket));
+								reportDataExport.push(dojo.mixin({id: count}, {product: product}, ticket));
+								count++;
+							});
+						}
+					});
+					
+					topic.publish(PubSubTopics.ANALYTICS_SAVE_TICKET_DETAILS_REPORT_DATA, reportData, reportDataExport);
+					
+					var store = new ItemFileWriteStore({data: gdata});
+						
+					var layout = [[
+						{'name': 'Ticket ID', 'field': 'ticketId', 'width': '10%', noresize: true},
+						{'name': 'Title', 'field': 'title', 'width': '20%', noresize: true},
+						{'name': 'Product', 'field': 'product', 'width': '20%', noresize: true},
+						{'name': 'Comp ID', 'field': 'compId', 'width': '10%', noresize: true},
+						{'name': 'Severity', 'field': 'severity', 'width': '10%', noresize: true},
+						{'name': 'Answerable', 'field': 'answerable', 'width': '10%', noresize: true},
+						{'name': 'Comments', 'field': 'comments', 'width': '20%', noresize: true},
+					]];
+						
+					var grid = new dojox.grid.EnhancedGrid({
+						id: 'gridReport',
+						store: store,
+						structure: layout,
+						rowSelector: '20px',
+						autoHeight: true,
+						sortInfo: 1,
+						plugins: {
+							pagination: {
+								defaultPageSize: 20,
+								pageSizes: ["20", "50", "100"],
+								description: true,
+								sizeSwitch: true,
+								pageStepper: true,
+								gotoButton: true,
+								maxPageStep: 5,
+								position: "top"
+							}
+						}
+					}, document.createElement('div'));
+					
+					dom.byId("gridReportDiv").appendChild(grid.domNode);
+						
+					grid.startup();
+				}, function(err){
+					console.log("ticketDetails: renderReport() - An unexpected error occurred: " + err);
+				});
+			}, function(err){
+				console.log("ticketDetails: renderReport() - An unexpected error occurred: " + err);
+			});
+		
+		}, function(err){
+			console.log("ticketDetails: renderReport() - An unexpected error occurred: " + err);
+		});
+	});
+}
+
+function refreshReportData() {
+	require([
+		"dojo/dom-form",
+		"dojox/grid/EnhancedGrid",
+		"dojo/data/ItemFileWriteStore",
+		"scripts/constants/Constants"
+	],
+	function (domForm, EnhancedGrid, ItemFileWriteStore, Constants) {
+		var showProduct = domForm.fieldToObject("showProduct");
+		var showAnswerable = domForm.fieldToObject("showAnswerable");
+		var showSeverity = domForm.fieldToObject("showSeverity");
+		
+		var gdata = {
+			identifier: 'id',
+			items: null
+		}
+		
+		var productSubset = []
+		if (showProduct == Constants.ANALYTICS_SHOW_ALL) {
+			productSubset = reportData;
+		} else {
+			reportData.forEach(function(row) {
+				if (row.product == showProduct) {
+					productSubset.push(row);
+				}
+			});
+		}
+		
+		var answerableSubset = [];
+		if (showAnswerable == Constants.ANALYTICS_SHOW_ALL) {
+			answerableSubset = productSubset;
+		} else if (showAnswerable == Constants.ANALYTICS_SHOW_YES) {
+			productSubset.forEach(function(row) {
+				if (row.answerable == Constants.ANALYTICS_SHOW_YES) {
+					answerableSubset.push(row);
+				}
+			});
+			
+		} else if (showAnswerable == Constants.ANALYTICS_SHOW_MAYBE) {
+			productSubset.forEach(function(row) {
+				if (row.answerable == Constants.ANALYTICS_SHOW_MAYBE) {
+					answerableSubset.push(row);
+				}
+			});
+		} else if (showAnswerable == Constants.ANALYTICS_SHOW_NO) {
+			productSubset.forEach(function(row) {
+				if (row.answerable == Constants.ANALYTICS_SHOW_NO) {
+					answerableSubset.push(row);
+				}
+			});
+		}
+		
+		var severitySubset = [];
+		if (showSeverity == Constants.ANALYTICS_SHOW_ALL) {
+			severitySubset = answerableSubset;
+		} else if (showSeverity == Constants.ANALYTICS_SHOW_SEVERITY1) {
+			answerableSubset.forEach(function(row) {
+				if (row.severity == Constants.ANALYTICS_SHOW_SEVERITY1) {
+					severitySubset.push(row);
+				}
+			});
+		} else if (showSeverity == Constants.ANALYTICS_SHOW_SEVERITY2) {
+			answerableSubset.forEach(function(row) {
+				if (row.severity == Constants.ANALYTICS_SHOW_SEVERITY2) {
+					severitySubset.push(row);
+				}
+			});
+		} else if (showSeverity == Constants.ANALYTICS_SHOW_SEVERITY3) {
+			answerableSubset.forEach(function(row) {
+				if (row.severity == Constants.ANALYTICS_SHOW_SEVERITY3) {
+					severitySubset.push(row);
+				}
+			});
+		} else if (showSeverity == Constants.ANALYTICS_SHOW_SEVERITY4) {
+			answerableSubset.forEach(function(row) {
+				if (row.severity == Constants.ANALYTICS_SHOW_SEVERITY4) {
+					severitySubset.push(row);
+				}
+			});
+		}
+		
+		gdata.items = severitySubset;
+		var newStore = new ItemFileWriteStore({data: gdata});
+		var grid = dijit.byId("gridReport");
+		grid.setStore(newStore);
+	});
+}
+
+function downloadReport() {
+	require([
+		"dojo/dom",
+		"dojo/dom-construct",
+		"scripts/utils/JSUtil"
+	],
+	function(dom, domConstruct, JSUtil) {
+		var csvData = JSUtil.JSONToCSVConvertor(reportDataExport, true);
+		//console.log(csvData);
+		
+		var divDownloadReportLink = dom.byId("downloadReportLink");
+		domConstruct.empty(divDownloadReportLink);
+		var blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+		var url = URL.createObjectURL(blob);     
+		domConstruct.create("a", { id: "downloadLink", href: url, download: "export.csv", innerHTML: "link", style: "visibility:hidden" }, divDownloadReportLink);
+		var downloadLink = dom.byId("downloadLink");
+		downloadLink.click();
+	});
+}
+
+
+require([
+	"dojo/topic",
+	"scripts/constants/PubSubTopics"
+],
+function(topic, PubSubTopics) {
+	topic.subscribe(PubSubTopics.ANALYTICS_SAVE_TICKET_DETAILS_REPORT_DATA, function(data, dataExport) {
+		reportData = data;
+		reportDataExport = dataExport;
+	});
+});
+</script>
+		
+	<div id="content" class="contentBase">
+		<div class="tabs">
+			<div class="tabSpacer"></div>
+			<div id="tabSelectReportAttachPoint" class="tab" onclick="showReportList();"><div id="tabSelectReportTextAttachPoint" class="tabText">Select Report</div></div>
+			<div id="tabDividerAttachPoint" class="tabDivider"></div>
+			<div id="tabReportAttachPoint" class="tabOn"><div id="tabReportNameAttachPoint" class="tabTextStatic">Ticket Details</div></div>
+		</div>
+		<div id="viewReportListAttachPoint" class="contentArea">
+			<div id="reportFiltersAttachPoint" class="filters">
+				<form id="filtersForm" onkeydown="if (event.keyCode == 13) { refreshReportData(); return false; }">
+				<div class="filtersText">Product</div>
+				<select id="showProduct" name="showProduct" class="filtersSelectField" style="width: 300px;">
+					<option value="all">All</option>
+				</select>
+				<div class="filtersText">Answerable</div>
+				<select id="showAnswerable" name="showAnswerable" class="filtersSelectField" style="width: 80px;">
+					<option value="all">All</option>
+					<option value="yes">Yes</option>
+					<option value="maybe">Maybe</option>
+					<option value="no">No</option>
+				</select>
+				<div class="filtersText">Severity</div>
+				<select id="showSeverity" name="showSeverity" class="filtersSelectField" style="width: 60px;">
+					<option value="all">All</option>
+					<option value="1">1</option>
+					<option value="2">2</option>
+					<option value="3">3</option>
+					<option value="4">4</option>
+				</select>
+				<button class="logBtnRefresh" type="button" onclick="refreshReportData();"></button>
+				<button class="btnDownload" type="button" onclick="downloadReport();"></button>
+				</form>
+			</div>
+			<div class="gridArea">
+				<div id="gridReportDiv" style="width:100%;"></div>
+			</div>
+			<div id="downloadReportLink"></div>
+		</div>
+	</div>
+
+	<!--
+	<div class="hidden">
+		<script type="text/javascript">
+			var images = new Array();
+			function preload() {
+				for (i = 0; i < preload.arguments.length; i++) {
+					images[i] = new Image();
+					images[i].src = preload.arguments[i];
+				}
+			}
+			preload(
+				"images/btnRefreshOn.png",
+				"images/btnDownloadOn.png"
+			)
+		</script>
+	</div>
+	-->
+</div>

@@ -1,0 +1,3 @@
+https://jazz.net/jazz01/web/projects/Requirements%20Management123#action=com.ibm.team.workitem.viewWorkItem&id=123456
+https://jazz.net/jazz/web/projects/Rational Team Concert#action=com.ibm.team.workitem.viewWorkItem&id=123456
+https://jazz.net/wiki/bin/view/Deployment/CLMSizingStrategy  
